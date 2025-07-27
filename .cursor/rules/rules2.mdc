@@ -1,0 +1,20 @@
+{
+  "rules": [
+    {
+      "description": "Prevent unnecessary folder creation",
+      "alwaysApply": true,
+      "globs": [
+        "**/*"
+      ],
+      "deny": [
+        {
+          "resource": "folder",
+          "action": "create"
+        }
+      ]
+    }
+  ]
+}
+
+alwaysApply: true
+---

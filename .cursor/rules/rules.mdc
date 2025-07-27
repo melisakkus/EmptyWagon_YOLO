@@ -1,0 +1,388 @@
+---
+alwaysApply: true
+---
+
+# Python Yazılım Geliştirme Prensipleri ve Kuralları
+
+## SOLID Prensipleri
+
+### Single Responsibility Principle (SRP)
+- Her sınıf ve fonksiyon yalnızca bir sorumluluğa sahip olmalı
+- Bir sınıfın değişmesi için yalnızca bir neden bulunmalı
+- Kod modülerliğini artırır ve bakımı kolaylaştırır
+
+### Open/Closed Principle (OCP)
+- Sınıflar genişletmeye açık, değişikliğe kapalı olmalı
+- Yeni özellikler mevcut kodu bozmadan eklenebilmeli
+- Abstract base class'lar ve interface'ler kullanın
+
+### Liskov Substitution Principle (LSP)
+- Alt sınıflar, üst sınıfların yerine geçebilmeli
+- Kalıtım ilişkilerinde davranışsal uyumluluk sağlanmalı
+- Method override'larda contract'ı bozmayın
+
+### Interface Segregation Principle (ISP)
+- Büyük interface'leri küçük ve spesifik parçalara bölün
+- Sınıflar ihtiyaç duymadıkları method'lara bağımlı olmamalı
+- ABC (Abstract Base Classes) kullanarak interface'leri tanımlayın
+
+### Dependency Inversion Principle (DIP)
+- Yüksek seviye modüller düşük seviye modüllere bağımlı olmamalı
+- Her ikisi de abstraction'lara bağımlı olmalı
+- Dependency injection pattern'ini kullanın
+
+## Kod Yazım Kuralları
+
+### PEP 8 Standartları
+- Satır uzunluğu maksimum 79-88 karakter
+- 4 space indentation kullanın (tab değil)
+- İki boş satır ile class'ları ayırın
+- Bir boş satır ile method'ları ayırın
+- Import'ları dosyanın başında gruplandırın
+
+### Naming Convention
+- **Değişkenler ve fonksiyonlar**: `snake_case`
+- **Sınıflar**: `PascalCase`
+- **Sabitler**: `UPPER_CASE`
+- **Private member'lar**: `_leading_underscore`
+- **Magic method'lar**: `__double_underscore__`
+
+### Docstring Kullanımı
+- Her modül, sınıf ve public method için docstring yazın
+- Google veya NumPy docstring formatını kullanın
+- Parametreleri, return değerlerini ve exception'ları belirtin
+
+## Temiz Kod Prensipleri
+
+### Fonksiyon Tasarımı
+- Fonksiyonlar küçük ve tek amaçlı olmalı (max 20-30 satır)
+- Side effect'lerden kaçının
+- Pure function'ları tercih edin
+- Maximum 3-4 parametre kullanın
+
+### Değişken ve İsimlendirme
+- Anlamlı ve açıklayıcı isimler kullanın
+- Boolean değişkenler için `is_`, `has_`, `can_` prefix'leri
+- Magic number'lardan kaçının, constant tanımlayın
+- Kısaltmalardan kaçının
+
+### Yorum ve Dokümantasyon
+- Kod kendini açıklayacak şekilde yazın
+- "Ne" değil "Neden" açıklayan yorumlar yazın
+- TODO ve FIXME yorumlarını takip edin
+- Güncel olmayan yorumları temizleyin
+
+## Hata Yönetimi
+
+### Exception Handling
+- Specific exception'ları yakalayın (bare except kullanmayın)
+- Exception'ları log'layın
+- Graceful degradation sağlayın
+- Custom exception'lar oluşturun
+
+### Logging
+- Appropriate log level'ları kullanın (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- Structured logging yapın
+- Sensitive bilgileri log'lamayın
+- Rotate log dosyalarını kullanın
+
+## Test Edilebilirlik
+
+### Unit Testing
+- Her fonksiyon ve sınıf için unit test yazın
+- Test coverage'ı minimum %80 tutun
+- AAA pattern'ini uygulayın (Arrange, Act, Assert)
+- Mock'ları doğru şekilde kullanın
+
+### Test Organizasyonu
+- Test dosyalarını `test_` prefix'i ile adlandırın
+- Test method'larını `test_` ile başlatın
+- Fixture'ları pytest ile kullanın
+- Integration ve unit testleri ayırın
+
+## Performans ve Optimizasyon
+
+### Genel Kurallar
+- Premature optimization'dan kaçının
+- Profiling araçları kullanın (cProfile, line_profiler)
+- Big O notation'ını göz önünde bulundurun
+- Memory leak'leri kontrol edin
+
+### Python Spesifik
+- List comprehension'ları uygun yerlerde kullanın
+- Generator'ları büyük data setleri için tercih edin
+- `__slots__` kullanarak memory tasarrufu yapın
+- Built-in fonksiyonları tercih edin
+
+## Güvenlik
+
+### Güvenlik Prensipleri
+- Input validation yapın
+- SQL injection'a karşı parameterized query kullanın
+- Sensitive bilgileri environment variable'larda tutun
+- Regular expression'larda ReDoS'a dikkat edin
+
+### Dependency Management
+- requirements.txt veya pyproject.toml güncel tutun
+- Vulnerability scan'leri düzenli yapın
+- Pinned version'lar kullanın
+- Virtual environment kullanın
+
+## Proje Yapısı
+
+### Dizin Organizasyonu
+```
+project/
+├── src/
+│   └── package/
+├── tests/
+├── docs/
+├── requirements.txt
+├── setup.py
+├── README.md
+└── .gitignore
+```
+
+### Configuration Management
+- Konfigürasyonu koddan ayırın
+- Environment-specific config dosyları kullanın
+- Default değerler sağlayın
+- Type checking için pydantic kullanın
+
+## Versiyon Kontrolü
+
+### Git Best Practices
+- Anlamlı commit message'ları yazın
+- Feature branch'leri kullanın
+- Pull request'lerde code review yapın
+- Semantic versioning uygulayın
+
+### Code Review
+- Her değişiklik için review sürecinden geçirin
+- Automated testing pipeline'ı kurun
+- Code quality metrics'leri takip edin
+- Documentation güncellemelerini kontrol edin
+
+## Cursor IDE Entegrasyonu
+
+### Önerilen Araçlar
+- **Formatter**: Black, autopep8
+- **Linter**: Pylint, flake8, ruff
+- **Type Checker**: mypy
+- **Import Sorter**: isort
+- **Docstring Checker**: pydocstyle
+
+### VS Code Extensions (Cursor ile uyumlu)
+- Python
+- Pylance
+- Python Docstring Generator
+- GitLens
+- Error Lens
+
+## Checklist
+
+### Kod Yazarken
+- [ ] Fonksiyon ve sınıf isimleri açıklayıcı mı?
+- [ ] Docstring'ler yazıldı mı?
+- [ ] Exception handling yapıldı mı?
+- [ ] Unit testler yazıldı mı?
+- [ ] Type hints eklendi mi?
+
+### Commit Öncesi
+- [ ] Linter kontrolleri geçti mi?
+- [ ] Testler başarılı mı?
+- [ ] Code coverage yeterli mi?
+- [ ] Documentation güncellendi mi?
+- [ ] Security check'leri yapıldı mı?
+# Python Yazılım Geliştirme Prensipleri ve Kuralları
+
+## SOLID Prensipleri
+
+### Single Responsibility Principle (SRP)
+- Her sınıf ve fonksiyon yalnızca bir sorumluluğa sahip olmalı
+- Bir sınıfın değişmesi için yalnızca bir neden bulunmalı
+- Kod modülerliğini artırır ve bakımı kolaylaştırır
+
+### Open/Closed Principle (OCP)
+- Sınıflar genişletmeye açık, değişikliğe kapalı olmalı
+- Yeni özellikler mevcut kodu bozmadan eklenebilmeli
+- Abstract base class'lar ve interface'ler kullanın
+
+### Liskov Substitution Principle (LSP)
+- Alt sınıflar, üst sınıfların yerine geçebilmeli
+- Kalıtım ilişkilerinde davranışsal uyumluluk sağlanmalı
+- Method override'larda contract'ı bozmayın
+
+### Interface Segregation Principle (ISP)
+- Büyük interface'leri küçük ve spesifik parçalara bölün
+- Sınıflar ihtiyaç duymadıkları method'lara bağımlı olmamalı
+- ABC (Abstract Base Classes) kullanarak interface'leri tanımlayın
+
+### Dependency Inversion Principle (DIP)
+- Yüksek seviye modüller düşük seviye modüllere bağımlı olmamalı
+- Her ikisi de abstraction'lara bağımlı olmalı
+- Dependency injection pattern'ini kullanın
+
+## Kod Yazım Kuralları
+
+### PEP 8 Standartları
+- Satır uzunluğu maksimum 79-88 karakter
+- 4 space indentation kullanın (tab değil)
+- İki boş satır ile class'ları ayırın
+- Bir boş satır ile method'ları ayırın
+- Import'ları dosyanın başında gruplandırın
+
+### Naming Convention
+- **Değişkenler ve fonksiyonlar**: `snake_case`
+- **Sınıflar**: `PascalCase`
+- **Sabitler**: `UPPER_CASE`
+- **Private member'lar**: `_leading_underscore`
+- **Magic method'lar**: `__double_underscore__`
+
+### Docstring Kullanımı
+- Her modül, sınıf ve public method için docstring yazın
+- Google veya NumPy docstring formatını kullanın
+- Parametreleri, return değerlerini ve exception'ları belirtin
+
+## Temiz Kod Prensipleri
+
+### Fonksiyon Tasarımı
+- Fonksiyonlar küçük ve tek amaçlı olmalı (max 20-30 satır)
+- Side effect'lerden kaçının
+- Pure function'ları tercih edin
+- Maximum 3-4 parametre kullanın
+
+### Değişken ve İsimlendirme
+- Anlamlı ve açıklayıcı isimler kullanın
+- Boolean değişkenler için `is_`, `has_`, `can_` prefix'leri
+- Magic number'lardan kaçının, constant tanımlayın
+- Kısaltmalardan kaçının
+
+### Yorum ve Dokümantasyon
+- Kod kendini açıklayacak şekilde yazın
+- "Ne" değil "Neden" açıklayan yorumlar yazın
+- TODO ve FIXME yorumlarını takip edin
+- Güncel olmayan yorumları temizleyin
+
+## Hata Yönetimi
+
+### Exception Handling
+- Specific exception'ları yakalayın (bare except kullanmayın)
+- Exception'ları log'layın
+- Graceful degradation sağlayın
+- Custom exception'lar oluşturun
+
+### Logging
+- Appropriate log level'ları kullanın (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+- Structured logging yapın
+- Sensitive bilgileri log'lamayın
+- Rotate log dosyalarını kullanın
+
+## Test Edilebilirlik
+
+### Unit Testing
+- Her fonksiyon ve sınıf için unit test yazın
+- Test coverage'ı minimum %80 tutun
+- AAA pattern'ini uygulayın (Arrange, Act, Assert)
+- Mock'ları doğru şekilde kullanın
+
+### Test Organizasyonu
+- Test dosyalarını `test_` prefix'i ile adlandırın
+- Test method'larını `test_` ile başlatın
+- Fixture'ları pytest ile kullanın
+- Integration ve unit testleri ayırın
+
+## Performans ve Optimizasyon
+
+### Genel Kurallar
+- Premature optimization'dan kaçının
+- Profiling araçları kullanın (cProfile, line_profiler)
+- Big O notation'ını göz önünde bulundurun
+- Memory leak'leri kontrol edin
+
+### Python Spesifik
+- List comprehension'ları uygun yerlerde kullanın
+- Generator'ları büyük data setleri için tercih edin
+- `__slots__` kullanarak memory tasarrufu yapın
+- Built-in fonksiyonları tercih edin
+
+## Güvenlik
+
+### Güvenlik Prensipleri
+- Input validation yapın
+- SQL injection'a karşı parameterized query kullanın
+- Sensitive bilgileri environment variable'larda tutun
+- Regular expression'larda ReDoS'a dikkat edin
+
+### Dependency Management
+- requirements.txt veya pyproject.toml güncel tutun
+- Vulnerability scan'leri düzenli yapın
+- Pinned version'lar kullanın
+- Virtual environment kullanın
+
+## Proje Yapısı
+
+### Dizin Organizasyonu
+```
+project/
+├── src/
+│   └── package/
+├── tests/
+├── docs/
+├── requirements.txt
+├── setup.py
+├── README.md
+└── .gitignore
+```
+
+### Configuration Management
+- Konfigürasyonu koddan ayırın
+- Environment-specific config dosyları kullanın
+- Default değerler sağlayın
+- Type checking için pydantic kullanın
+
+## Versiyon Kontrolü
+
+### Git Best Practices
+- Anlamlı commit message'ları yazın
+- Feature branch'leri kullanın
+- Pull request'lerde code review yapın
+- Semantic versioning uygulayın
+
+### Code Review
+- Her değişiklik için review sürecinden geçirin
+- Automated testing pipeline'ı kurun
+- Code quality metrics'leri takip edin
+- Documentation güncellemelerini kontrol edin
+
+## Cursor IDE Entegrasyonu
+
+### Önerilen Araçlar
+- **Formatter**: Black, autopep8
+- **Linter**: Pylint, flake8, ruff
+- **Type Checker**: mypy
+- **Import Sorter**: isort
+- **Docstring Checker**: pydocstyle
+
+### VS Code Extensions (Cursor ile uyumlu)
+- Python
+- Pylance
+- Python Docstring Generator
+- GitLens
+- Error Lens
+
+## Checklist
+
+### Kod Yazarken
+- [ ] Fonksiyon ve sınıf isimleri açıklayıcı mı?
+- [ ] Docstring'ler yazıldı mı?
+- [ ] Exception handling yapıldı mı?
+- [ ] Unit testler yazıldı mı?
+- [ ] Type hints eklendi mi?
+
+### Commit Öncesi
+- [ ] Linter kontrolleri geçti mi?
+- [ ] Testler başarılı mı?
+- [ ] Code coverage yeterli mi?
+- [ ] Documentation güncellendi mi?
+- [ ] Security check'leri yapıldı mı?
