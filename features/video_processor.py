@@ -5,7 +5,7 @@ import os
 import time
 
 # Global ayarlar
-model_name = "models/yolov8n.pt"
+model_name = "models/best.pt"
 person_id = 0
 
 wagon_capacity = 30
