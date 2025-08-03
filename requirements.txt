@@ -1,1 +1,2 @@
- 
+#FIREBASE LIBRARIES
+firebase-admin
