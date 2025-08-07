@@ -1,12 +1,15 @@
+import os
+import subprocess
 from multiprocessing import Process, freeze_support
 import glob
 from features.video_processor import process_video
-import subprocess # subprocess modülünü ekledik
+from features.langchain_weather import get_langchain_weather_response
 
 if __name__ == '__main__':
-    freeze_support()  # Windows için şart
+    freeze_support()
 
     video_files = glob.glob("data/videos/*.mp4") #glob dosya adı desenlerine göre dosya arar.
+    weather_info = get_langchain_weather_response()
 
     #print("🧵 PROCESSING başladı...")
     #start = time.time()
@@ -21,7 +24,11 @@ if __name__ == '__main__':
     # Streamlit uygulamasını başlat
     print("🚀 Streamlit uygulamasını başlatılıyor...")
     try:
-        subprocess.Popen(["streamlit", "run", "features/streamlit_app.py"], shell=True)
+        # Ortam değişkenini ayarlayarak hava durumu bilgisini Streamlit'e aktar
+        env = os.environ.copy()
+        env["WEATHER_INFO"] = weather_info # Burası önemli
+
+        subprocess.Popen(["streamlit", "run", "features/streamlit_app.py"], env=env, shell=True)
         print("✅ Streamlit uygulaması başarıyla başlatıldı.")
     except Exception as e:
         print(f"🚨 Streamlit uygulamasını başlatırken bir hata oluştu: {e}")

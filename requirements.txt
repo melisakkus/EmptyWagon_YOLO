@@ -1,2 +1,10 @@
 #FIREBASE LIBRARIES
 firebase-admin
+
+#LANGCHAIN
+langchain
+langchain-google-genai
+
+#WEATHER API
+requests
+python-dotenv

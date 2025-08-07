@@ -4,7 +4,13 @@ import time
 
 st.set_page_config(layout="wide")
 
-st.title("Metro Vagonu Doluluk Oranları")
+st.markdown("<h1 style='text-align: center; color: #add8e6;'>Metro Vagonu Doluluk Oranları</h1>", unsafe_allow_html=True) # Başlık küçültüldü
+
+# Hava durumu bilgisini ortam değişkeninden al
+weather_info = os.getenv("WEATHER_INFO", "Hava durumu bilgisi alınamadı.")
+
+# Hava durumu bilgisini ortalayarak göster
+st.markdown(f"<h4 style='text-align: center; color: #add8e6;'>{weather_info}</h4>", unsafe_allow_html=True) # H3'ten H4'e düşürüldü
 
 # CSS stillerini başlangıçta bir kez yükle
 st.markdown("""
@@ -23,8 +29,8 @@ st.markdown("""
         position: relative;
     }
     .wagon-shell, .locomotive-shell {
-        width: 200px;
-        height: 100px;
+        width: 250px; /* Büyütüldü */
+        height: 125px; /* Büyütüldü */
         background-color: #333;
         border: 2px solid #555;
         border-radius: 15px;
@@ -40,7 +46,7 @@ st.markdown("""
         position: relative;
     }
     .locomotive-shell {
-        width: 150px;
+        width: 180px; /* Büyütüldü */
     }
     .wagon-content {
         width: 90%;
@@ -56,20 +62,20 @@ st.markdown("""
         padding: 5px 0; /* Üstten ve alttan biraz dolgu ekleyelim */
     }
     .wagon-name {
-        font-size: 0.9em; /* Yazı boyutunu biraz küçültelim */
+        font-size: 0.8em; /* Yazı boyutu küçültüldü */
         font-weight: bold;
         margin: 0; /* Boşlukları sıfırla */
         line-height: 1.1; /* Satır yüksekliğini ayarla */
     }
     .wagon-percentage {
-        font-size: 1.5em; /* Yüzde yazısını biraz küçültelim */
+        font-size: 1.2em; /* Yüzde yazısı küçültüldü */
         font-weight: bold;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         line-height: 1.1; /* Satır yüksekliğini ayarla */
         margin: 0; /* Boşlukları sıfırla */
     }
     .wagon-status-text {
-        font-size: 0.7em; /* Durum yazısını daha da küçültelim */
+        font-size: 0.6em; /* Durum yazısı daha da küçültüldü */
         font-style: italic;
         margin: 0; /* Boşlukları sıfırla */
         line-height: 1.1; /* Satır yüksekliğini ayarla */
@@ -84,26 +90,26 @@ st.markdown("""
         background-color: #add8e6;
         border: 1px solid #222;
         border-radius: 3px;
-        height: 25px;
+        height: 30px; /* Büyütüldü */
     }
     .window {
-        width: 35px;
+        width: 40px; /* Büyütüldü */
     }
     .door {
-        width: 25px;
+        width: 30px; /* Büyütüldü */
         background-color: #444;
     }
     .loco-window {
-        width: 45px;
-        height: 30px;
+        width: 50px; /* Büyütüldü */
+        height: 35px; /* Büyütüldü */
         background-color: #add8e6;
         border: 1px solid #222;
         border-radius: 5px;
         margin-bottom: 10px;
     }
     .connector {
-        width: 30px;
-        height: 10px;
+        width: 35px; /* Büyütüldü */
+        height: 12px; /* Büyütüldü */
         background-color: #666;
         border-radius: 5px;
         flex-shrink: 0;
@@ -114,9 +120,9 @@ st.markdown("""
     .connector::before, .connector::after {
         content: '';
         position: absolute;
-        top: -5px;
-        width: 8px;
-        height: 20px;
+        top: -6px; /* Büyütüldü */
+        width: 10px; /* Büyütüldü */
+        height: 24px; /* Büyütüldü */
         background-color: #555;
         border-radius: 3px;
     }
@@ -159,7 +165,7 @@ video_names = {
 # Log dosyalarının dizini
 fullness_log_dir = os.path.join("outputs", "logs")
 
-st.header("Anlık Vagon Doluluk Durumu")
+#st.markdown("<h2 style='text-align: center; color: #add8e6;'>Anlık Vagon Doluluk Durumu</h2>", unsafe_allow_html=True) # Başlık küçültüldü
 
 # Tüm tren çizimini dinamik olarak güncellemek için bir placeholder
 train_display_placeholder = st.empty()
