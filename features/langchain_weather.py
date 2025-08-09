@@ -48,20 +48,22 @@ def get_langchain_weather_response():
             )
         )
 
-        chain = LLMChain(llm=llm, prompt=prompt_template)
+        #chain = LLMChain(llm=llm, prompt=prompt_template)
+        chain = prompt_template | llm
 
         # Belirtilen koordinatlar için özel bir konum adı var mı kontrol et
         current_location_coords = (ankara_koru_subway_lat, ankara_koru_subway_lon)
         location_to_use = LOCATION_MAPPINGS.get(current_location_coords, weather_data['name'])
 
-        cevap = chain.run(
-            location=location_to_use,
-            current_temp=f"{current_temp:.1f}",
-            feels_like_temp=f"{feels_like_temp:.1f}",
-            wind_speed=round(wind_speed * 3.6),
-            humidity=humidity,
-            weather_description=weather_description,
-            icon_url=icon_url
+        cevap = chain.invoke({
+            "location": location_to_use,
+            "current_temp": f"{current_temp:.1f}",
+            "feels_like_temp": f"{feels_like_temp:.1f}",
+            "wind_speed": round(wind_speed * 3.6),
+            "humidity": humidity,
+            "weather_description": weather_description,
+            "icon_url": icon_url
+        }
         )
         return cevap
     else:

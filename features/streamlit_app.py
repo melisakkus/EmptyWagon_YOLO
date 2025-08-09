@@ -188,11 +188,11 @@ while True:
                     if fullness_str:
                         current_fullness[wagon_name] = float(fullness_str)
                     else:
-                        current_fullness[wagon_name] = "Veri bekleniyor..."
+                        current_fullness[wagon_name] = 0.0 # 'Veri bekleniyor...' yerine None
             except (IOError, ValueError) as e:
-                current_fullness[wagon_name] = f"Hata: {e}"
+                current_fullness[wagon_name] = 0.0 # 'Hata: {e}' yerine None
         else:
-            current_fullness[wagon_name] = "Dosya bulunamadı."
+            current_fullness[wagon_name] = 0.0 # 'Dosya bulunamadı.' yerine None
             
     # CSS stilleri ve tren yapısı
     train_html_parts = []
@@ -210,9 +210,9 @@ while True:
     """)
 
     for i, (wagon_name, _) in enumerate(video_names.items()):
-        fullness_value = current_fullness.get(wagon_name, "N/A")
-        color = "grey"
-        status_text = "Veri bekleniyor..."
+        fullness_value = current_fullness.get(wagon_name, 0.0) # Varsayılan değeri 0.0 olarak ayarla
+        color = "#1E90FF" # Başlangıç rengini mavi (BOŞ) olarak ayarla
+        status_text = "BOŞ" # Başlangıç durumunu BOŞ olarak ayarla
 
         if isinstance(fullness_value, (int, float)):
             if fullness_value < 10:
@@ -248,19 +248,19 @@ while True:
                 </div>
             </div>
             """)
-        else:
-            # Hata veya veri bekleniyor durumu
+        else: # Bu kısım aslında hiç çalışmayacak, çünkü varsayılan değer 0.0 olarak ayarlandı.
+            # Ancak yine de burada tutalım, ileride bir hata durumunda yardımcı olabilir.
             train_html_parts.append(f"""
-            <div class="wagon-shell" style="background-color: grey;">
+            <div class="wagon-shell" style="background-color: #1E90FF;">
                 <div class="window-row">
                     <div class="window"></div>
                     <div class="door"></div>
                     <div class="window"></div>
                 </div>
-                <div class="wagon-content" style="background-color: grey;">
+                <div class="wagon-content" style="background-color: #1E90FF;">
                     <div class="wagon-name">{wagon_name}</div>
-                    <div class="wagon-percentage">{fullness_value}</div>
-                    <div class="wagon-status-text">Yükleniyor...</div>
+                    <div class="wagon-percentage">0.00%</div>
+                    <div class="wagon-status-text">BOŞ</div>
                 </div>
                 <div class="window-row">
                     <div class="window"></div>

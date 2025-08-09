@@ -27,8 +27,8 @@ def get_weather(lat: float, lon: float):
         response.raise_for_status()  # HTTP hataları için istisna fırlat
 
         weather_data = response.json()
-        print("Hava Durumu Verileri:")
-        print(weather_data)
+        #print("Hava Durumu Verileri:")
+        #print(weather_data)
         return weather_data
     except requests.exceptions.RequestException as e:
         print(f"Hava durumu bilgisi alınırken hata oluştu: {e}")

@@ -8,3 +8,5 @@ langchain-google-genai
 #WEATHER API
 requests
 python-dotenv
+
+

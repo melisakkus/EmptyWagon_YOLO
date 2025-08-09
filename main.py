@@ -11,6 +11,14 @@ if __name__ == '__main__':
     video_files = glob.glob("data/videos/*.mp4") #glob dosya adı desenlerine göre dosya arar.
     weather_info = get_langchain_weather_response()
 
+    # Log dosyalarını temizle
+    log_dir = os.path.join("outputs", "logs")
+    os.makedirs(log_dir, exist_ok=True) # Dizin yoksa oluştur
+    for f in os.listdir(log_dir):
+        if f.endswith("_fullness.txt"):
+            os.remove(os.path.join(log_dir, f))
+            print(f"Eski log dosyası silindi: {f}")
+
     #print("🧵 PROCESSING başladı...")
     #start = time.time()
 
