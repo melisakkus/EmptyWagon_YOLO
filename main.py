@@ -9,7 +9,7 @@ if __name__ == '__main__':
     freeze_support()
 
     video_files = glob.glob("data/videos/*.mp4") #glob dosya adı desenlerine göre dosya arar.
-    weather_info = get_langchain_weather_response()
+    #weather_info = get_langchain_weather_response()
 
     # Log dosyalarını temizle
     log_dir = os.path.join("outputs", "logs")
@@ -34,9 +34,10 @@ if __name__ == '__main__':
     try:
         # Ortam değişkenini ayarlayarak hava durumu bilgisini Streamlit'e aktar
         env = os.environ.copy()
-        env["WEATHER_INFO"] = weather_info # Burası önemli
+        ###env["WEATHER_INFO"] = weather_info # Burası önemli
+        subprocess.Popen(["streamlit", "run", "features/streamlit_app.py"], shell=True)
 
-        subprocess.Popen(["streamlit", "run", "features/streamlit_app.py"], env=env, shell=True)
+        ###subprocess.Popen(["streamlit", "run", "features/streamlit_app.py"], env=env, shell=True)
         print("✅ Streamlit uygulaması başarıyla başlatıldı.")
     except Exception as e:
         print(f"🚨 Streamlit uygulamasını başlatırken bir hata oluştu: {e}")
@@ -54,36 +55,3 @@ if __name__ == '__main__':
 
     #end = time.time()
     #print(f"✅ Processing süresi: {end - start:.2f} saniye\n")
-"""
-
-import glob
-import threading
-import time
-
-from features.video_processor import process_video   # Aynı fonksiyon kullanılabilir
-
-def start_thread(video_file):
-    process_video(video_file)  # Her thread aynı işlevi yapar
-
-if __name__ == '__main__':
-    # 🎞️ Videoları listele
-    video_files = glob.glob("data/videos/*.mp4")
-
-    print("🧵 THREADING başladı...")
-    start = time.time()
-
-    threads = []
-
-    for video_file in video_files:
-        t = threading.Thread(target=start_thread, args=(video_file,))
-        t.start()
-        threads.append(t)
-
-    # ⏳ Tüm thread'lerin bitmesini bekle
-    for t in threads:
-        t.join()
-
-    end = time.time()
-    print(f"✅ Threading süresi: {end - start:.2f} saniye\n")
-
-"""
