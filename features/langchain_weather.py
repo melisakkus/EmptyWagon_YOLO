@@ -14,9 +14,9 @@ load_dotenv()
 # Google API key'i al
 api_key = os.getenv("GOOGLE_API_KEY")
 
-# LLM oluştur (Gemini 1.5 Flash)
+# LLM oluştur (Gemini 2.5 Flash)
 llm = GoogleGenerativeAI(
-    model="models/gemini-1.5-flash",
+    model="models/gemini-2.5-flash",
     google_api_key=api_key,
     temperature=0.7
 )

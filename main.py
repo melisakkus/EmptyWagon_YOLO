@@ -9,7 +9,7 @@ if __name__ == '__main__':
     freeze_support()
 
     video_files = glob.glob("data/videos/*.mp4") #glob dosya adı desenlerine göre dosya arar.
-    #weather_info = get_langchain_weather_response()
+    weather_info = get_langchain_weather_response()
 
     # Log dosyalarını temizle
     log_dir = os.path.join("outputs", "logs")
@@ -34,10 +34,9 @@ if __name__ == '__main__':
     try:
         # Ortam değişkenini ayarlayarak hava durumu bilgisini Streamlit'e aktar
         env = os.environ.copy()
-        ###env["WEATHER_INFO"] = weather_info # Burası önemli
-        subprocess.Popen(["streamlit", "run", "features/streamlit_app.py"], shell=True)
+        env["WEATHER_INFO"] = weather_info # Burası önemli
 
-        ###subprocess.Popen(["streamlit", "run", "features/streamlit_app.py"], env=env, shell=True)
+        subprocess.Popen(["streamlit", "run", "features/streamlit_app.py"], env=env, shell=True)
         print("✅ Streamlit uygulaması başarıyla başlatıldı.")
     except Exception as e:
         print(f"🚨 Streamlit uygulamasını başlatırken bir hata oluştu: {e}")
