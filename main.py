@@ -15,9 +15,9 @@ if __name__ == '__main__':
     log_dir = os.path.join("outputs", "logs")
     os.makedirs(log_dir, exist_ok=True) # Dizin yoksa oluştur
     for f in os.listdir(log_dir):
-        if f.endswith("_fullness.txt"):
+        if f.endswith(("_fullness.txt", "video_processing_complete.txt")): # Hem fullness loglarını hem de tamamlama flagını sil
             os.remove(os.path.join(log_dir, f))
-            print(f"Eski log dosyası silindi: {f}")
+            #print(f"Eski log dosyası silindi: {f}")
 
     #print("🧵 PROCESSING başladı...")
     #start = time.time()
@@ -46,6 +46,11 @@ if __name__ == '__main__':
         p.join()
 
     print("✅ Tüm video işleme tamamlandı.")
+
+    # İşlem tamamlandığında bir 'flag' dosyası oluştur
+    processing_complete_flag_path = os.path.join(log_dir, "video_processing_complete.txt")
+    with open(processing_complete_flag_path, "w") as f:
+        f.write("completed")
 
     #end = time.time()
     #print(f"✅ Processing süresi: {end - start:.2f} saniye\n")

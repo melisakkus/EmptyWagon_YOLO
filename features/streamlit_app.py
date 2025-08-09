@@ -165,10 +165,16 @@ video_names = {
 # Log dosyalarının dizini
 fullness_log_dir = os.path.join("outputs", "logs")
 
+# Video işleme tamamlanma bayrağının yolu
+processing_complete_flag_path = os.path.join(fullness_log_dir, "video_processing_complete.txt")
+
 #st.markdown("<h2 style='text-align: center; color: #add8e6;'>Anlık Vagon Doluluk Durumu</h2>", unsafe_allow_html=True) # Başlık küçültüldü
 
 # Tüm tren çizimini dinamik olarak güncellemek için bir placeholder
 train_display_placeholder = st.empty()
+
+# Tamamlama mesajı için placeholder
+completion_message_placeholder = st.empty()
 
 #st.info("Doluluk oranları anlık olarak güncellenmektedir. Lütfen video işleme sürecinin arka planda çalıştığından emin olun (main.py'yi çalıştırarak).")
 
@@ -290,5 +296,14 @@ while True:
     full_train_html = "\n".join(cleaned_html_parts)
     
     train_display_placeholder.markdown(full_train_html, unsafe_allow_html=True)
+
+    # Video işleme tamamlandı bayrağını kontrol et ve mesajı göster
+    if os.path.exists(processing_complete_flag_path):
+        completion_message_placeholder.markdown(
+            "<br><h3 style='text-align: center; color: #A0EEFF; padding: 10px; background-color: #282828; border-radius: 8px;'>✨ Tüm Vagon Görüntüleri Başarıyla Analiz Edildi! ✨</h3>",
+            unsafe_allow_html=True
+        )
+    else:
+        completion_message_placeholder.empty() # Dosya yoksa mesajı temizle
 
     time.sleep(1) # Her 1 saniyede bir güncelle
