@@ -1,6 +1,19 @@
-# 🚂 EmptyWagon: Akıllı Vagon Takip ve Analiz Sistemi
+# 🚇 MetroWagon: Metro Duraklarında Akıllı Vagon Doluluk Gösterge Sistemi
 
-EmptyWagon, demiryolu vagonlarının doluluk oranını ve konumunu gerçek zamanlı olarak analiz eden, modern teknolojilerle geliştirilmiş yenilikçi bir projedir. Görüntü işleme, makine öğrenimi ve bulut tabanlı veri yönetimiyle, demiryolu taşımacılığında verimliliği artırmayı hedefler.
+MetroWagon, metro duraklarında yerleştirilen akıllı ekranlar aracılığıyla gelen trenlerin vagon doluluk oranlarını gerçek zamanlı olarak gösteren, AI destekli yenilikçi bir toplu taşıma optimizasyon projesidir. Bu sistem sayesinde yolcular, hangi vagonların daha boş olduğunu önceden görebilir ve metro kullanım deneyimlerini optimize edebilirler.
+
+---
+
+## 📖 Proje Amacı ve Faydaları
+
+### Ana Hedef
+Metro duraklarında yerleştirilen ekranlarda, gelen trenlerin her vagonunun doluluk oranını gerçek zamanlı olarak göstermek ve yolcuların daha bilinçli vagon seçimi yapmasını sağlamak.
+
+### Toplu Taşıma Optimizasyonu
+- **Yolcu Dağılımı:** Merdivenlere yakın vagonların aşırı dolmasını önlemek
+- **Zaman Tasarrufu:** Yolcuların daha boş vagonları tercih etmesini sağlamak
+- **Konfor Artışı:** Metro kullanım deneyimini iyileştirmek
+- **Verimlilik:** Vagon kapasitesinin daha dengeli kullanılması
 
 ---
 
@@ -13,13 +26,11 @@ EmptyWagon, demiryolu vagonlarının doluluk oranını ve konumunu gerçek zaman
   Görüntü işleme ve video analizi için.
 
 - **YOLO (You Only Look Once)**  
-  Derin öğrenme tabanlı nesne tespiti (vagon doluluk analizi için).
+  Derin öğrenme tabanlı kişi sayısı tespiti (vagon doluluk analizi için).
 
 - **Streamlit**  
   Kullanıcı dostu, etkileşimli web arayüzü.
 
-- **Google Firebase (Firestore)**  
-  Gerçek zamanlı veri tabanı ve bulut entegrasyonu.
 
 - **LangChain**  
   Doğal dil işleme ve yapay zeka destekli analizler için.
@@ -28,52 +39,95 @@ EmptyWagon, demiryolu vagonlarının doluluk oranını ve konumunu gerçek zaman
 
 ## 📖 Proje Tanıtımı
 
-EmptyWagon, demiryolu vagonlarının iç doluluk oranını ve konumunu otomatik olarak tespit eder. Video ve görsel verilerden alınan bilgiler, makine öğrenimi modelleriyle analiz edilir ve sonuçlar hem görsel olarak hem de bulut tabanlı veri tabanında saklanır. Kullanıcılar, Streamlit arayüzü üzerinden anlık raporlar ve geçmiş analizlere kolayca erişebilir.
+MetroWagon sistemi, metro vagonlarına yerleştirilen kameralardan alınan görüntüleri AI teknolojileriyle analiz ederek kişi sayısını tespit eder. Bu sayı, her vagon için optimum kapasiteye bölünerek doluluk yüzdesi hesaplanır. Sonuçlar, metro duraklarındaki ekranlarda gerçek zamanlı olarak gösterilir.
+
+### Sistem Bileşenleri
+1. **Vagon Kameraları:** Her vagonda kişi sayısını tespit eden AI destekli kamera sistemi
+2. **Durak Ekranları:** Merkezi ve aktarma duraklarda vagon doluluk bilgilerini gösteren dijital ekranlar
+3. **AI Analiz Merkezi:** Görüntü işleme ve doluluk hesaplama algoritmaları
+4. **Gerçek Zamanlı Veri Aktarımı:** Durak ekranlarına anlık bilgi gönderimi
 
 ---
 
-## 🗺️ Proje Akışı
+## 🗺️ Proje Geliştirme Akışı
+
+### 1. Proje Planlama ve Tasarım
+- **Claude üzerinde proje akışı hazırlama** 
+
+### 2. Kod Geliştirme
+- **PyCharm üzerinde Object Tracking ve Counting için kod yazma** - Kişi sayısı tespit algoritmaları geliştirildi
+
+### 3. AI Model ve Dataset Hazırlığı
+- **Runway, Hailuo AI gibi AI Toollar ile video üretimi** - Metro vagon senaryoları için test verileri oluşturuldu
+- **Roboflow hazır dataset ile Google Colab üzerinde YOLOv8 fine tune işlemi** - Metro ortamına özel kişi tespit modeli optimize edildi
+
+### 4. API Entegrasyonları
+- **OpenWeather üzerinde hava durumu apisi alma** - Metro konumunun hava durumu bilgisi alındı
+- **LangChain frameworku ile OpenWeather Api'sinden gelen hava durumunu Gemini 2.5Flash ile kullanıcı dostu bir şekilde yorumlayarak gösterme** - AI destekli hava durumu yorumu kullanıcılara sunuldu
+
+### 5. Kullanıcı Arayüzü ve Dağıtım
+- **Streamlit ile kullanıcı sayfası** - Metro kullanıcıları için ekran tasarımı geliştirildi
+- **Git - Github ile versiyon kontrolü** - Proje versiyon yönetimi
+
+---
+
+## 🛠️ Kullanılan AI Tool & Model
+
+- **Geliştirme Araçları:** PyCharm, Cursor, Claude, Google AI Studio, ChatGPT
+- **AI Modeller:** Gemini, YOLO
+- **AI Video Üretim:** Runway, Hailuo AI
+- **Dataset ve Model Eğitimi:** Roboflow, Google Colab
+- **API ve Framework:** OpenWeather, LangChain
+- **Web Framework:** Streamlit
+- **Versiyon Kontrolü:** Git, GitHub
+
+---
+
+## 📖 Sistem İşleyişi
 
 1. **Veri Toplama:**  
-   - Vagonlara ait videolar ve referans görseller `data/` klasöründe saklanır.
+   - Metro vagonlarındaki kameralardan gerçek zamanlı görüntü akışı alınır.
 
-2. **Görüntü İşleme & Analiz:**  
-   - `features/video_processor.py` ve YOLO modelleri ile vagon doluluk oranı tespit edilir.
+2. **AI Tabanlı Kişi Sayısı Tespiti:**  
+   - `features/video_processor.py` ve YOLO modelleri ile vagon içindeki kişi sayısı tespit edilir.
    - Sonuçlar `outputs/` klasöründe görsel ve metin olarak kaydedilir.
 
-3. **Gerçek Zamanlı Takip:**  
-   - `features/real_time_tracking.py` ile vagonların anlık konumu ve durumu izlenir.
+3. **Doluluk Oranı Hesaplama:**  
+   - Tespit edilen kişi sayısı, vagon optimum kapasitesine bölünerek doluluk yüzdesi hesaplanır.
 
-4. **Veri Tabanı Entegrasyonu:**  
-   - `features/database/` altındaki modüller ile analiz sonuçları Firestore'a kaydedilir.
+4. **Gerçek Zamanlı Veri Aktarımı:**  
+   - Hesaplanan doluluk oranları, metro duraklarındaki ekranlara anlık olarak gönderilir.
 
-5. **Web Arayüzü:**  
-   - `features/streamlit_app.py` ile kullanıcılar, analizleri ve raporları interaktif olarak görüntüler.
+5. **Durak Ekranları:**  
+   - Merkezi ve aktarma duraklardaki ekranlarda her vagonun doluluk oranı görsel olarak gösterilir.
 
-6. **Ekstra Özellikler:**  
-   - Hava durumu entegrasyonu (`features/get_weather.py`, `features/langchain_weather.py`) ile analizlere çevresel faktörler de eklenir.
+6. **Ek Özellikler:**  
+   - Hava durumu entegrasyonu (`features/get_weather.py`, `features/langchain_weather.py`) ile konum hava durumu hakkında bilgi verilir.
 
 ---
 
 ## 🗂️ Özellikler (`features/` klasörü)
 
-- **database/**  
-  Firestore/Firebase ile veri tabanı işlemleri (CRUD, bağlantı, başlatma).
-
 - **get_weather.py**  
   OpenWeatherMap API ile hava durumu verisi çekme.
 
 - **langchain_weather.py**  
-  Hava durumu bilgisini LLM (LangChain + Google GenAI) ile doğal dilde özetleme.
+  Hava durumunu AI ile kullanıcı dostu bir şekilde yorumlama.
 
 - **reference_setup.py**  
-  Referans görsel ve veri ayarları.
+  Metro vagonu ilgili alan referans değerleri.
 
 - **streamlit_app.py**  
-  Kullanıcı arayüzü ve görsel raporlama (Streamlit tabanlı).
+  Metro kullanıcıları için sunum ekranı.
 
 - **video_processor.py**  
-  Video işleme, YOLO ile doluluk tespiti ve analiz.
+  Metro vagon görüntülerinden kişi sayısı tespiti ve doluluk hesaplama.
 
 ---
+
+## 🎯 Gelecek Geliştirmeler
+
+- **Mobil Uygulama:** Yolcuların kişisel cihazlarından doluluk bilgilerine erişimi
+- **Tahmin Algoritmaları:** Makine öğrenimi ile doluluk tahminleri
+- **Çoklu Metro Hattı Desteği:** Farklı metro hatlarında sistem entegrasyonu
 
