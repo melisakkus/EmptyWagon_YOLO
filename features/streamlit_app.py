@@ -13,10 +13,13 @@ if project_root not in sys.path:
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain_google_genai import GoogleGenerativeAI
-# Eğer get_weather.py aynı klasördeyse (features klasörü içinde):
-from .get_weather import get_weather # Bu hala doğru çünkü get_weather aynı klasörde
+
+# HATA DÜZELTME: get_weather.py'yi features paketinden mutlak olarak import et
+# get_weather.py, features klasörü içinde bir modül olduğu için 'features.' öneki kullanılır.
+from features.get_weather import get_weather # BURADA DÜZELTME YAPILDI
+
 # config.py artık ana dizinden mutlak olarak import edilecek
-from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS # BURADA DEĞİŞİKLİK YAPILDI
+from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
 # Eğer yerelde test ederken .env kullanmak isterseniz:
 from dotenv import load_dotenv
 
