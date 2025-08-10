@@ -1,30 +1,13 @@
-import os
 import requests
-from dotenv import load_dotenv
+import os # os modülü hata ayıklama mesajları için tutulabilir ama artık doğrudan kullanılmayacak
 
-
-def get_weather(lat: float, lon: float):
+def get_weather(lat: float, lon: float, api_key: str): # api_key parametresini ekledik
     """
     Belirtilen enlem ve boylama göre OpenWeatherMap API'sinden hava durumu bilgisini çeker.
-    API anahtarı önce Streamlit secrets'tan, sonra .env dosyasından okunur.
+    API anahtarı bir parametre olarak sağlanmalıdır.
     """
-    api_key = None
-
-    # Önce Streamlit secrets'tan dene
-    try:
-        import streamlit as st
-        api_key = st.secrets["OPENWEATHER_API_KEY"]
-        print("API key Streamlit secrets'tan alındı")
-    except (ImportError, KeyError, FileNotFoundError, AttributeError) as e:
-        print(f"Streamlit secrets'tan API key alınamadı: {e}")
-        # Streamlit yoksa veya secret bulunamazsa .env'den dene
-        load_dotenv()
-        api_key = os.getenv("OPENWEATHER_API_KEY")
-        if api_key:
-            print("API key .env dosyasından alındı")
-
     if not api_key:
-        print("Hata: OPENWEATHER_API_KEY ne secrets'ta ne de .env dosyasında tanımlı.")
+        print("Hata: OPENWEATHER_API_KEY sağlanmadı.")
         return None
 
     # API key'in ilk ve son birkaç karakterini göster (güvenlik için)
@@ -78,15 +61,24 @@ def get_weather(lat: float, lon: float):
         print(f"Beklenmeyen hata: {e}")
         return None
 
-
+# __name__ == '__main__': bloğunu isterseniz kaldırabilirsiniz,
+# veya test için api_key'i manuel olarak tanımlamanız gerekir.
+# Test için:
 if __name__ == '__main__':
-    # Test için
-    ankara_lat = 39.9334
-    ankara_lon = 32.8597
-    result = get_weather(ankara_lat, ankara_lon)
-    if result:
-        print("Başarılı!")
-        print(f"Şehir: {result['name']}")
-        print(f"Sıcaklık: {result['main']['temp']}°C")
+    # .env dosyasından anahtarı okuyarak test edebilirsiniz
+    from dotenv import load_dotenv
+    load_dotenv()
+    test_api_key = os.getenv("OPENWEATHER_API_KEY")
+
+    if test_api_key:
+        ankara_lat = 39.9334
+        ankara_lon = 32.8597
+        result = get_weather(ankara_lat, ankara_lon, test_api_key) # api_key'i geçin
+        if result:
+            print("Başarılı!")
+            print(f"Şehir: {result['name']}")
+            print(f"Sıcaklık: {result['main']['temp']}°C")
+        else:
+            print("Başarısız!")
     else:
-        print("Başarısız!")
+        print("Test için OPENWEATHER_API_KEY bulunamadı.")
