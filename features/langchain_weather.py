@@ -8,11 +8,25 @@ from .get_weather import get_weather
 # config.py dosyasından sabit değerleri içe aktar
 from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
 
-# .env dosyasını yükle
-load_dotenv()
+
+def get_api_key():
+    """API key'i önce Streamlit secrets'tan, sonra .env'den al"""
+    api_key = None
+
+    # Önce Streamlit secrets'tan dene
+    try:
+        import streamlit as st
+        api_key = st.secrets["GOOGLE_API_KEY"]
+    except (ImportError, KeyError, FileNotFoundError):
+        # Streamlit yoksa veya secret bulunamazsa .env'den dene
+        load_dotenv()
+        api_key = os.getenv("GOOGLE_API_KEY")
+
+    return api_key
+
 
 # Google API key'i al
-api_key = os.getenv("GOOGLE_API_KEY")
+api_key = get_api_key()
 
 # LLM oluştur (Gemini 2.5 Flash)
 llm = GoogleGenerativeAI(
@@ -20,6 +34,7 @@ llm = GoogleGenerativeAI(
     google_api_key=api_key,
     temperature=0.7
 )
+
 
 def get_langchain_weather_response():
     ankara_koru_subway_lat = ANKARA_KORU_SUBWAY_LAT
@@ -38,7 +53,8 @@ def get_langchain_weather_response():
         icon_url = f"http://openweathermap.org/img/wn/{weather_icon}@2x.png"
 
         prompt_template = PromptTemplate(
-            input_variables=["location", "current_temp", "feels_like_temp", "wind_speed", "humidity", "weather_description", "icon_url"],
+            input_variables=["location", "current_temp", "feels_like_temp", "wind_speed", "humidity",
+                             "weather_description", "icon_url"],
             template=(
                 "Lütfen {location} yerinin hava durumunu aşağıdaki bilgilere göre arkadaşça ve samimi bir cümle yaz:\n"
                 "İkon için uygun bir emoji kullan ve metnin başına ekle."
@@ -48,7 +64,6 @@ def get_langchain_weather_response():
             )
         )
 
-        #chain = LLMChain(llm=llm, prompt=prompt_template)
         chain = prompt_template | llm
 
         # Belirtilen koordinatlar için özel bir konum adı var mı kontrol et
@@ -63,8 +78,7 @@ def get_langchain_weather_response():
             "humidity": humidity,
             "weather_description": weather_description,
             "icon_url": icon_url
-        }
-        )
+        })
         return cevap
     else:
         return "Hava durumu bilgisi alınamadı."
