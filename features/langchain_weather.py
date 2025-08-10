@@ -42,22 +42,32 @@ def get_api_key():
     return api_key
 
 
-# Google API key'i al
-api_key = get_api_key()
+def create_llm():
+    """LLM oluşturmak için ayrı fonksiyon - bu sayıda import sırasında hata olursa yakalanır"""
+    try:
+        google_api_key = get_api_key()
+        if not google_api_key:
+            print("UYARI: Google API key bulunamadı!")
+            return None
 
-if not api_key:
-    print("UYARI: Google API key bulunamadı!")
-
-# LLM oluştur (Gemini 2.5 Flash)
-llm = GoogleGenerativeAI(
-    model="models/gemini-2.5-flash",
-    google_api_key=api_key,
-    temperature=0.7
-)
+        llm = GoogleGenerativeAI(
+            model="models/gemini-2.5-flash",
+            google_api_key=google_api_key,
+            temperature=0.7
+        )
+        return llm
+    except Exception as e:
+        print(f"LLM oluşturulurken hata: {e}")
+        return None
 
 
 def get_langchain_weather_response():
     print("get_langchain_weather_response başlatıldı")
+
+    # Her çağrıda LLM'i yeniden oluştur
+    llm = create_llm()
+    if not llm:
+        return "Google API key bulunamadı, hava durumu yanıtı oluşturulamıyor."
 
     ankara_koru_subway_lat = ANKARA_KORU_SUBWAY_LAT
     ankara_koru_subway_lon = ANKARA_KORU_SUBWAY_LON
@@ -86,13 +96,14 @@ def get_langchain_weather_response():
                                  "weather_description", "icon_url"],
                 template=(
                     "Lütfen {location} yerinin hava durumunu aşağıdaki bilgilere göre arkadaşça ve samimi bir cümle yaz:\n"
-                    "İkon için uygun bir emoji kullan ve metnin başına ekle."
+                    "İkon için uygun bir emoji kullan ve metnin başına ekle. "
                     "Termometre **{current_temp}°C** gösteriyor ama hissedilen sıcaklık **{feels_like_temp}°C**. "
                     "Rüzgar **{wind_speed} km/h** hızında esiyor, nem oranı ise %**{humidity}**. "
                     "Hava durumu: {weather_description}. Hava durumu ikonu: {icon_url}."
                 )
             )
 
+            # Yeni LangChain syntax'ı kullanın
             chain = prompt_template | llm
 
             # Belirtilen koordinatlar için özel bir konum adı var mı kontrol et
@@ -122,3 +133,9 @@ def get_langchain_weather_response():
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
         return f"Hava durumu alınırken hata oluştu: {str(e)}"
+
+
+# Test kodu
+if __name__ == "__main__":
+    result = get_langchain_weather_response()
+    print(f"\nSonuç: {result}")
