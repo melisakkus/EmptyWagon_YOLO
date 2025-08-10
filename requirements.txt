@@ -1,12 +1,24 @@
 #FIREBASE LIBRARIES
-firebase-admin
+firebase-admin>=6.0.0
 
 #LANGCHAIN
-langchain
-langchain-google-genai
+langchain>=0.1.0
+langchain-google-genai>=0.1.0
 
 #WEATHER API
-requests
-python-dotenv
+requests>=2.31.0
+python-dotenv>=1.0.0
 
+#STREAMLIT - Web uygulaması için
+streamlit>=1.28.0
 
+#COMPUTER VISION & AI
+opencv-python-headless>=4.8.0
+ultralytics>=8.0.0
+numpy>=1.24.0
+
+#ENVIRONMENT & CONFIGURATION
+python-dotenv>=1.0.0
+
+#ADDITIONAL UTILITIES
+Pillow>=10.0.0
