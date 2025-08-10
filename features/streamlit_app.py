@@ -2,6 +2,9 @@ import streamlit as st
 import os
 import time
 import sys
+
+# Proje ana dizinini Python arama yoluna ekle
+# Bu, 'config.py' gibi ana dizindeki modüllere erişimi sağlar.
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if project_root not in sys.path:
     sys.path.append(project_root)
@@ -10,12 +13,12 @@ if project_root not in sys.path:
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain_google_genai import GoogleGenerativeAI
-# Eğer get_weather.py ve config.py aynı klasördeyse (features klasörü içinde):
-from get_weather import get_weather
-from ..config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
+# Eğer get_weather.py aynı klasördeyse (features klasörü içinde):
+from .get_weather import get_weather # Bu hala doğru çünkü get_weather aynı klasörde
+# config.py artık ana dizinden mutlak olarak import edilecek
+from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS # BURADA DEĞİŞİKLİK YAPILDI
 # Eğer yerelde test ederken .env kullanmak isterseniz:
 from dotenv import load_dotenv
-
 
 # --- Hava Durumu Bilgisini Alan Fonksiyon (get_langchain_weather_response) ---
 # Bu fonksiyon Streamlit'te bir kere çalışıp sonucunu önbelleğe alacak.
