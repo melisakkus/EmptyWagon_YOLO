@@ -1,16 +1,136 @@
 import streamlit as st
 import os
 import time
+import sys
+
+# Hava durumu için gerekli import'lar
+from langchain.prompts import PromptTemplate
+from langchain.chains import LLMChain
+from langchain_google_genai import GoogleGenerativeAI
+# Eğer get_weather.py ve config.py aynı klasördeyse (features klasörü içinde):
+from get_weather import get_weather
+from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
+# Eğer yerelde test ederken .env kullanmak isterseniz:
+from dotenv import load_dotenv
+
+
+# --- Hava Durumu Bilgisini Alan Fonksiyon (get_langchain_weather_response) ---
+# Bu fonksiyon Streamlit'te bir kere çalışıp sonucunu önbelleğe alacak.
+@st.cache_resource(ttl=3600)  # Hava durumu bilgisini 1 saat (3600 saniye) boyunca önbelleğe al
+def get_langchain_weather_response_cached():
+    # print("get_langchain_weather_response_cached başlatıldı") # Debug için Cloud loglarında görünür
+
+    # API anahtarlarını Streamlit secrets'tan burada çekin
+    google_api_key = st.secrets.get("GOOGLE_API_KEY")
+    openweathermap_api_key = st.secrets.get("OPENWEATHER_API_KEY")
+
+    # UYARI: Streamlit Cloud'da st.secrets kullanılması tercih edilir.
+    # Bu kısım sadece yerel geliştirme için bir geri dönüş olabilir,
+    # ancak Streamlit Cloud'da doğru çalışması için secrets.toml'e güvenmelisiniz.
+    if not google_api_key or not openweathermap_api_key:
+        load_dotenv()  # Yerel çalıştırma için .env yükle
+        if not google_api_key:
+            google_api_key = os.getenv("GOOGLE_API_KEY")
+            # if google_api_key: print("Google API key .env dosyasından alındı") # Debug
+        if not openweathermap_api_key:
+            openweathermap_api_key = os.getenv("OPENWEATHER_API_KEY")
+            # if openweathermap_api_key: print("OpenWeatherMap API key .env dosyasından alındı") # Debug
+
+    if not google_api_key:
+        # print("UYARI: Google API key bulunamadı!") # Debug
+        return "Google API key bulunamadı, hava durumu yanıtı oluşturulamıyor. Lütfen Streamlit Secrets'ı kontrol edin."
+
+    if not openweathermap_api_key:
+        # print("UYARI: OpenWeatherMap API key bulunamadı!") # Debug
+        return "OpenWeatherMap API key bulunamadı, hava durumu bilgisi alınamıyor. Lütfen Streamlit Secrets'ı kontrol edin."
+
+    llm = None
+    try:
+        llm = GoogleGenerativeAI(
+            model="models/gemini-2.5-flash",
+            google_api_key=google_api_key,
+            temperature=0.7
+        )
+        # print("LLM başarıyla oluşturuldu.") # Debug
+    except Exception as e:
+        # print(f"LLM oluşturulurken hata: {e}") # Debug
+        return f"LLM oluşturulurken hata oluştu: {str(e)}"
+
+    ankara_koru_subway_lat = ANKARA_KORU_SUBWAY_LAT
+    ankara_koru_subway_lon = ANKARA_KORU_SUBWAY_LON
+
+    # print(f"Koordinatlar: {ankara_koru_subway_lat}, {ankara_koru_subway_lon}") # Debug
+
+    try:
+        # get_weather fonksiyonuna api_key'i parametre olarak geçirin
+        weather_data = get_weather(ankara_koru_subway_lat, ankara_koru_subway_lon, openweathermap_api_key)
+        # print(f"Weather data result: {weather_data is not None}") # Debug
+
+        if weather_data:
+            # print(f"Weather data keys: {list(weather_data.keys())}") # Debug
+
+            current_temp = weather_data['main']['temp']
+            feels_like_temp = weather_data['main']['feels_like']
+            wind_speed = weather_data['wind']['speed']
+            humidity = weather_data['main']['humidity']
+            weather_description = weather_data['weather'][0]['description']
+            weather_icon = weather_data['weather'][0]['icon']
+
+            icon_url = f"http://openweathermap.org/img/wn/{weather_icon}@2x.png"
+
+            prompt_template = PromptTemplate(
+                input_variables=["location", "current_temp", "feels_like_temp", "wind_speed", "humidity",
+                                 "weather_description", "icon_url"],
+                template=(
+                    "Lütfen {location} yerinin hava durumunu aşağıdaki bilgilere göre arkadaşça ve samimi bir cümle yaz:\n"
+                    "İkon için uygun bir emoji kullan ve metnin başına ekle. "
+                    "Termometre **{current_temp}°C** gösteriyor ama hissedilen sıcaklık **{feels_like_temp}°C**. "
+                    "Rüzgar **{wind_speed} km/h** hızında esiyor, nem oranı ise %**{humidity}**. "
+                    "Hava durumu: {weather_description}. Hava durumu ikonu: {icon_url}."
+                )
+            )
+
+            chain = prompt_template | llm
+
+            current_location_coords = (ankara_koru_subway_lat, ankara_koru_subway_lon)
+            location_to_use = LOCATION_MAPPINGS.get(current_location_coords, weather_data['name'])
+
+            # print(f"Location kullanılacak: {location_to_use}") # Debug
+
+            cevap = chain.invoke({
+                "location": location_to_use,
+                "current_temp": f"{current_temp:.1f}",
+                "feels_like_temp": f"{feels_like_temp:.1f}",
+                "wind_speed": round(wind_speed * 3.6),
+                "humidity": humidity,
+                "weather_description": weather_description,
+                "icon_url": icon_url
+            })
+
+            # print("LangChain response başarıyla alındı") # Debug
+            return cevap
+        else:
+            # print("Weather data None döndü") # Debug
+            return "Hava durumu bilgisi alınamadı. API'den veri gelmedi."
+
+    except Exception as e:
+        # import traceback # Debug
+        # print(f"get_langchain_weather_response_cached'da hata: {e}") # Debug
+        # print(f"Traceback: {traceback.format_exc()}") # Debug
+        return f"Hava durumu alınırken hata oluştu: {str(e)}"
+
+
+# --- Streamlit Uygulaması Başlangıcı ---
 
 st.set_page_config(layout="wide")
 
-st.markdown("<h1 style='text-align: center; color: #add8e6;'>Metro Vagonu Doluluk Oranları</h1>", unsafe_allow_html=True) # Başlık küçültüldü
+st.markdown("<h1 style='text-align: center; color: #add8e6;'>Metro Vagonu Doluluk Oranları</h1>",
+            unsafe_allow_html=True)
 
-# Hava durumu bilgisini ortam değişkeninden al
-weather_info = os.getenv("WEATHER_INFO", "Hava durumu bilgisi alınamadı.")
-
-# Hava durumu bilgisini ortalayarak göster
-st.markdown(f"<h4 style='text-align: center; color: #add8e6;'>{weather_info}</h4>", unsafe_allow_html=True) # H3'ten H4'e düşürüldü
+# Hava durumu bilgisini doğrudan fonksiyondan al ve göster
+# Bu kısım, uygulamanın her çalışmasında bir kere (veya cache süresi dolduğunda) çağrılacak
+weather_info = get_langchain_weather_response_cached()
+st.markdown(f"<h4 style='text-align: center; color: #add8e6;'>{weather_info}</h4>", unsafe_allow_html=True)
 
 # CSS stillerini başlangıçta bir kez yükle
 st.markdown("""
@@ -154,7 +274,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 # Video dosyası yolları (sadece isimler, log dosyası için kullanılacak)
 video_names = {
     "Vagon 1": "wagon1.mp4",
@@ -168,25 +287,21 @@ fullness_log_dir = os.path.join("outputs", "logs")
 # Video işleme tamamlanma bayrağının yolu
 processing_complete_flag_path = os.path.join(fullness_log_dir, "video_processing_complete.txt")
 
-#st.markdown("<h2 style='text-align: center; color: #add8e6;'>Anlık Vagon Doluluk Durumu</h2>", unsafe_allow_html=True) # Başlık küçültüldü
-
 # Tüm tren çizimini dinamik olarak güncellemek için bir placeholder
 train_display_placeholder = st.empty()
 
 # Tamamlama mesajı için placeholder
 completion_message_placeholder = st.empty()
 
-#st.info("Doluluk oranları anlık olarak güncellenmektedir. Lütfen video işleme sürecinin arka planda çalıştığından emin olun (main.py'yi çalıştırarak).")
-
 # Anlık güncellemeler için döngü
 while True:
     current_fullness = {}
-    
+
     # Her bir vagonun doluluk oranını log dosyasından oku
     for wagon_name, video_filename in video_names.items():
         log_file_name = f"{os.path.splitext(video_filename)[0]}_fullness.txt"
         fullness_log_file_path = os.path.join(fullness_log_dir, log_file_name)
-        
+
         if os.path.exists(fullness_log_file_path):
             try:
                 with open(fullness_log_file_path, "r") as f:
@@ -194,12 +309,12 @@ while True:
                     if fullness_str:
                         current_fullness[wagon_name] = float(fullness_str)
                     else:
-                        current_fullness[wagon_name] = 0.0 # 'Veri bekleniyor...' yerine None
+                        current_fullness[wagon_name] = 0.0
             except (IOError, ValueError) as e:
-                current_fullness[wagon_name] = 0.0 # 'Hata: {e}' yerine None
+                current_fullness[wagon_name] = 0.0
         else:
-            current_fullness[wagon_name] = 0.0 # 'Dosya bulunamadı.' yerine None
-            
+            current_fullness[wagon_name] = 0.0
+
     # CSS stilleri ve tren yapısı
     train_html_parts = []
     train_html_parts.append("""<div class="train-container">""")
@@ -216,24 +331,24 @@ while True:
     """)
 
     for i, (wagon_name, _) in enumerate(video_names.items()):
-        fullness_value = current_fullness.get(wagon_name, 0.0) # Varsayılan değeri 0.0 olarak ayarla
-        color = "#1E90FF" # Başlangıç rengini mavi (BOŞ) olarak ayarla
-        status_text = "BOŞ" # Başlangıç durumunu BOŞ olarak ayarla
+        fullness_value = current_fullness.get(wagon_name, 0.0)
+        color = "#1E90FF"  # Başlangıç rengini mavi (BOŞ) olarak ayarla
+        status_text = "BOŞ"  # Başlangıç durumunu BOŞ olarak ayarla
 
         if isinstance(fullness_value, (int, float)):
             if fullness_value < 10:
-                color = "#1E90FF" # Mavi (Boş)
+                color = "#1E90FF"  # Mavi (Boş)
                 status_text = "BOŞ"
             elif fullness_value < 30:
-                color = "#4CAF50" # Yeşil (Az Dolu)
+                color = "#4CAF50"  # Yeşil (Az Dolu)
                 status_text = "AZ DOLU"
             elif fullness_value < 60:
-                color = "#ffa500" # Turuncu (Orta Dolu)
+                color = "#ffa500"  # Turuncu (Orta Dolu)
                 status_text = "ORTA DOLU"
             else:
-                color = "#ff4b4b" # Kırmızı (Çok Dolu)
+                color = "#ff4b4b"  # Kırmızı (Çok Dolu)
                 status_text = "ÇOK DOLU"
-            
+
             # Vagon kutusunun HTML'i
             train_html_parts.append(f"""
             <div class="wagon-shell">
@@ -254,8 +369,7 @@ while True:
                 </div>
             </div>
             """)
-        else: # Bu kısım aslında hiç çalışmayacak, çünkü varsayılan değer 0.0 olarak ayarlandı.
-            # Ancak yine de burada tutalım, ileride bir hata durumunda yardımcı olabilir.
+        else:
             train_html_parts.append(f"""
             <div class="wagon-shell" style="background-color: #1E90FF;">
                 <div class="window-row">
@@ -275,8 +389,8 @@ while True:
                 </div>
             </div>
             """)
-            
-        if i < len(video_names) - 1: # Vagonlar arasına bağlantı elemanı ekle
+
+        if i < len(video_names) - 1:  # Vagonlar arasına bağlantı elemanı ekle
             train_html_parts.append("""<div class="connector"></div>""")
 
     # Trenin arka lokomotifi/kuyruğu
@@ -294,7 +408,7 @@ while True:
     # Her bir HTML parçasını temizle ve birleştir
     cleaned_html_parts = [part.strip().replace('\r', '') for part in train_html_parts]
     full_train_html = "\n".join(cleaned_html_parts)
-    
+
     train_display_placeholder.markdown(full_train_html, unsafe_allow_html=True)
 
     # Video işleme tamamlandı bayrağını kontrol et ve mesajı göster
@@ -304,6 +418,6 @@ while True:
             unsafe_allow_html=True
         )
     else:
-        completion_message_placeholder.empty() # Dosya yoksa mesajı temizle
+        completion_message_placeholder.empty()  # Dosya yoksa mesajı temizle
 
-    time.sleep(1) # Her 1 saniyede bir güncelle
+    time.sleep(1)  # Her 1 saniyede bir güncelle
