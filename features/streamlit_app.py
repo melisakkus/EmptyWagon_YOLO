@@ -9,7 +9,7 @@ from langchain.chains import LLMChain
 from langchain_google_genai import GoogleGenerativeAI
 # Eğer get_weather.py ve config.py aynı klasördeyse (features klasörü içinde):
 from get_weather import get_weather
-from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
+from ..config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
 # Eğer yerelde test ederken .env kullanmak isterseniz:
 from dotenv import load_dotenv
 
