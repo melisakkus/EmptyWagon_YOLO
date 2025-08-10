@@ -2,6 +2,9 @@ import streamlit as st
 import os
 import time
 import sys
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.append(project_root)
 
 # Hava durumu için gerekli import'lar
 from langchain.prompts import PromptTemplate
