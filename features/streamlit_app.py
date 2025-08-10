@@ -14,9 +14,8 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain_google_genai import GoogleGenerativeAI
 
-# HATA DÜZELTME: get_weather.py'yi features paketinden mutlak olarak import et
-# get_weather.py, features klasörü içinde bir modül olduğu için 'features.' öneki kullanılır.
-from features.get_weather import get_weather # BURADA DÜZELTME YAPILDI
+# get_weather.py'yi features paketinden mutlak olarak import et
+from features.get_weather import get_weather
 
 # config.py artık ana dizinden mutlak olarak import edilecek
 from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
@@ -24,10 +23,11 @@ from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPP
 from dotenv import load_dotenv
 
 # --- Hava Durumu Bilgisini Alan Fonksiyon (get_langchain_weather_response) ---
-# Bu fonksiyon Streamlit'te bir kere çalışıp sonucunu önbelleğe alacak.
-@st.cache_resource(ttl=3600)  # Hava durumu bilgisini 1 saat (3600 saniye) boyunca önbelleğe al
-def get_langchain_weather_response_cached():
-    # print("get_langchain_weather_response_cached başlatıldı") # Debug için Cloud loglarında görünür
+# DİKKAT: `@st.cache_resource` dekoratörü kaldırıldı. Bu fonksiyon artık her çağrıldığında
+# hava durumu verisini API'den anlık olarak çekecek ve LLM'e gönderecektir.
+# Bu durum API maliyetlerinizi artırabilir ve kota sınırlarınıza daha çabuk ulaşmanıza neden olabilir.
+def get_langchain_weather_response(): # Fonksiyon adı, artık cache'lenmediğini belirtmek için değiştirildi
+    # print("get_langchain_weather_response başlatıldı (önbelleksiz)") # Debug için Cloud loglarında görünür
 
     # API anahtarlarını Streamlit secrets'tan burada çekin
     google_api_key = st.secrets.get("GOOGLE_API_KEY")
@@ -124,7 +124,7 @@ def get_langchain_weather_response_cached():
 
     except Exception as e:
         # import traceback # Debug
-        # print(f"get_langchain_weather_response_cached'da hata: {e}") # Debug
+        # print(f"get_langchain_weather_response'da hata: {e}") # Debug
         # print(f"Traceback: {traceback.format_exc()}") # Debug
         return f"Hava durumu alınırken hata oluştu: {str(e)}"
 
@@ -137,8 +137,8 @@ st.markdown("<h1 style='text-align: center; color: #add8e6;'>Metro Vagonu Dolulu
             unsafe_allow_html=True)
 
 # Hava durumu bilgisini doğrudan fonksiyondan al ve göster
-# Bu kısım, uygulamanın her çalışmasında bir kere (veya cache süresi dolduğunda) çağrılacak
-weather_info = get_langchain_weather_response_cached()
+# Bu kısım, uygulamanın her çalışmasında bir kere çağrılacak (artık önbellek yok)
+weather_info = get_langchain_weather_response() # Fonksiyon adı güncellendi
 st.markdown(f"<h4 style='text-align: center; color: #add8e6;'>{weather_info}</h4>", unsafe_allow_html=True)
 
 # CSS stillerini başlangıçta bir kez yükle
