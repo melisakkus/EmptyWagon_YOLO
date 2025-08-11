@@ -1,13 +1,13 @@
 import os
 import sys
-import streamlit as st  # Streamlit'i burada import edin
-from dotenv import load_dotenv  # Yerel çalıştırma için hala lazım olabilir
+import streamlit as st
+from dotenv import load_dotenv
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain_google_genai import GoogleGenerativeAI
 
 try:
-    from get_weather import get_weather  # Artık bu get_weather_with_key gibi düşünün
+    from get_weather import get_weather
 except ImportError:
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     from get_weather import get_weather
@@ -15,14 +15,16 @@ except ImportError:
 from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
 
 
+# Bu fonksiyon Streamlit'te cache'li olduğu için Streamlit'in secrets'ına doğrudan erişebilir.
+@st.cache_data(ttl=3600)
 def get_langchain_weather_response():
     print("get_langchain_weather_response başlatıldı")
 
-    # API anahtarlarını Streamlit secrets'tan burada çekin
-    google_api_key = st.secrets.get("GOOGLE_API_KEY")
-    openweathermap_api_key = st.secrets.get("OPENWEATHER_API_KEY")
+    # API anahtarlarını Streamlit secrets'tan burada çekin - BURASI DÜZELTİLDİ
+    google_api_key = st.secrets.get("general", {}).get("GOOGLE_API_KEY") # <-- BURAYI DÜZELTTİK
+    openweathermap_api_key = st.secrets.get("general", {}).get("OPENWEATHER_API_KEY") # <-- BURAYI DÜZELTTİK
 
-    # Eğer yerelde çalışıyorsa ve secrets yoksa .env'den çekmeyi dene
+    # Eğer yerelde çalışıyorsa ve secrets yoksa .env'den çekmeyi dene (bu kısım Streamlit Cloud'da çalışmaz, yerel test için)
     if not google_api_key or not openweathermap_api_key:
         load_dotenv()
         if not google_api_key:
@@ -34,18 +36,18 @@ def get_langchain_weather_response():
 
     if not google_api_key:
         print("UYARI: Google API key bulunamadı!")
-        return "Google API key bulunamadı, hava durumu yanıtı oluşturulamıyor."
+        return "Google API key bulunamadı, hava durumu yanıtı oluşturulamıyor. Lütfen Streamlit Secrets'ı veya .env dosyasını kontrol edin."
 
     if not openweathermap_api_key:
         print("UYARI: OpenWeatherMap API key bulunamadı!")
-        return "OpenWeatherMap API key bulunamadı, hava durumu bilgisi alınamıyor."
+        return "OpenWeatherMap API key bulunamadı, hava durumu bilgisi alınamıyor. Lütfen Streamlit Secrets'ı veya .env dosyasını kontrol edin."
 
     llm = None
     try:
         llm = GoogleGenerativeAI(
             model="models/gemini-2.5-flash",
             google_api_key=google_api_key,
-            temperature=0.7
+            temperature=0.7 # Hava durumu özetinizde daha kısıtlı bir çıktı istiyorsanız bu değeri 0.0'a düşürebilirsiniz.
         )
     except Exception as e:
         print(f"LLM oluşturulurken hata: {e}")
@@ -57,7 +59,6 @@ def get_langchain_weather_response():
     print(f"Koordinatlar: {ankara_koru_subway_lat}, {ankara_koru_subway_lon}")
 
     try:
-        # get_weather fonksiyonuna api_key'i parametre olarak geçirin
         weather_data = get_weather(ankara_koru_subway_lat, ankara_koru_subway_lon, openweathermap_api_key)
         print(f"Weather data result: {weather_data is not None}")
 
@@ -69,21 +70,31 @@ def get_langchain_weather_response():
             wind_speed = weather_data['wind']['speed']
             humidity = weather_data['main']['humidity']
             weather_description = weather_data['weather'][0]['description']
-            weather_icon = weather_data['weather'][0]['icon']
+            weather_icon = weather_data['weather'][0]['icon'] # LLM'in emoji seçmesine yardımcı olması için kalabilir
 
-            icon_url = f"http://openweathermap.org/img/wn/{weather_icon}@2x.png"
-
+            # NOT: Prompt'unuz hala bir liste veya özeti andıran bir yapı üretebilir.
+            # LLM'in "Harika bir özet! İşte size daha kısa ve öz bir sunum:" gibi metinler üretmesini engellemek için
+            # prompt'u daha da agresif ve direkt hale getirmeniz gerekebilir.
+            # Örneğin:
             prompt_template = PromptTemplate(
                 input_variables=["location", "current_temp", "feels_like_temp", "wind_speed", "humidity",
                                  "weather_description", "icon_url"],
                 template=(
-                    "Lütfen {location} yerinin hava durumunu aşağıdaki bilgilere göre arkadaşça ve samimi bir cümle yaz:\n"
-                    "İkon için uygun bir emoji kullan ve metnin başına ekle. "
-                    "Termometre **{current_temp}°C** gösteriyor ama hissedilen sıcaklık **{feels_like_temp}°C**. "
-                    "Rüzgar **{wind_speed} km/h** hızında esiyor, nem oranı ise %**{humidity}**. "
-                    "Hava durumu: {weather_description}. Hava durumu ikonu: {icon_url}."
+                    "Sadece ve sadece tek bir cümle halinde, aşağıdaki bilgileri kullanarak hava durumu raporu oluştur. "
+                    "Başka hiçbir metin, başlık, özet, giriş cümlesi, liste veya madde işareti kullanma. "
+                    "Cümleye hava durumuna uygun tek bir emoji ile başla. Örneğin: '☀️ Ankara Koru için hava durumu: ...'\n"
+                    "Bilgiler:\n"
+                    "Lokasyon: {location}\n"
+                    "Sıcaklık: {current_temp}°C\n"
+                    "Hissedilen Sıcaklık: {feels_like_temp}°C\n"
+                    "Rüzgar Hızı: {wind_speed} km/h\n"
+                    "Nem Oranı: %{humidity}\n"
+                    "Genel Durum: {weather_description}\n"
+                    "Hava durumu ikonu: {icon_url}\n"
+                    "Cümle:" # Modele direkt olarak cümlenin başlamasını söyleyin
                 )
             )
+
 
             chain = prompt_template | llm
 
@@ -99,11 +110,11 @@ def get_langchain_weather_response():
                 "wind_speed": round(wind_speed * 3.6),
                 "humidity": humidity,
                 "weather_description": weather_description,
-                "icon_url": icon_url
+                "icon_url": icon_url # Prompt'ta icon_url kullanıldığı için burada da olmalı
             })
 
             print("LangChain response başarıyla alındı")
-            return cevap
+            return cevap # LLM'in çıktısında zaten emoji ve giriş cümlesi olduğu için f-string'i kaldırdık
         else:
             print("Weather data None döndü")
             return "Hava durumu bilgisi alınamadı. API'den veri gelmedi."
@@ -115,21 +126,11 @@ def get_langchain_weather_response():
         return f"Hava durumu alınırken hata oluştu: {str(e)}"
 
 
-# Test kodu (anahtar manuel olarak sağlanmalı veya .env'den okunmalı)
+# Test kodu kısmı (değişmedi)
 if __name__ == "__main__":
-    # Test için st.secrets'tan çekme simülasyonu yapamayız, .env kullanmalıyız
     load_dotenv()
     os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY")
     os.environ["OPENWEATHER_API_KEY"] = os.getenv("OPENWEATHER_API_KEY")
 
-    # st.secrets'ı simüle etmek için dummy bir Streamlit modülü oluşturabilirsiniz
-    # Ancak en basit yol, test kodu için doğrudan get_langchain_weather_response'ı çağırmak değil,
-    # ilgili fonksiyona anahtarları sağlamaktır.
-    # Bu test kodu, Streamlit ortamı dışında çalışırken doğru çalışmayabilir,
-    # çünkü get_langchain_weather_response artık st.secrets'ı kullanıyor.
-    # En iyi uygulama, bu tür testleri Streamlit'in kendi test çerçevesi ile yapmaktır.
-
     print("\nLütfen bu testi Streamlit uygulaması içinde çalıştırın (streamlit run main.py).")
     print("Doğrudan çalıştırmak st.secrets'a erişemediği için sorunlara neden olabilir.")
-    # result = get_langchain_weather_response() # Bu artık st.secrets'a bağlı olduğu için doğrudan çalışmaz
-    # print(f"\nSonuç: {result}")
