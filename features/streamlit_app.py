@@ -15,13 +15,16 @@ from features.database.firestore_crud import get_all_documents, get_document
 from firebase_admin import firestore
 
 # Hava durumu için gerekli import'lar
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from langchain_google_genai import GoogleGenerativeAI
-from features.get_weather import get_weather
-from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
-from dotenv import load_dotenv
+# Eski importları kaldırıyoruz, çünkü get_langchain_weather_response'u doğrudan import edeceğiz
+# from langchain.prompts import PromptTemplate
+# from langchain.chains import LLMChain
+# from langchain_google_genai import GoogleGenerativeAI
+# from features.get_weather import get_weather # Bu hala get_weather API'si için gerekli
+# from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
+# from dotenv import load_dotenv
 
+# Yeni import: langchain.weather.py dosyasındaki fonksiyonu içe aktar
+from features.langchain_weather import get_langchain_weather_response as get_weather_report_from_llm # Fonksiyon adını çakışmaması için değiştirdim
 
 # --- Firebase Bağlantısı ---
 @st.cache_resource
@@ -47,85 +50,22 @@ PROCESSING_STATUS_COLLECTION = "processing_status"
 PROCESSING_COMPLETE_DOC_ID = "video_analysis_status"
 
 
-# --- Hava Durumu Bilgisini Alan Fonksiyon ---
-@st.cache_data(ttl=3600)
-def get_langchain_weather_response():
-    google_api_key = st.secrets.get("general", {}).get("GOOGLE_API_KEY")
-    openweathermap_api_key = st.secrets.get("general", {}).get("OPENWEATHER_API_KEY")
-
-    # Local geliştirme için .env'den çek
-    if not google_api_key or not openweathermap_api_key:
-        load_dotenv()
-        if not google_api_key:
-            google_api_key = os.getenv("GOOGLE_API_KEY")
-        if not openweathermap_api_key:
-            openweathermap_api_key = os.getenv("OPENWEATHER_API_KEY")
-
-    if not google_api_key:
-        return "Google API anahtarı bulunamadı, hava durumu yanıtı oluşturulamıyor. Lütfen Streamlit Secrets'ı veya .env dosyasını kontrol edin."
-
-    if not openweathermap_api_key:
-        return "OpenWeatherMap API anahtarı bulunamadı, hava durumu bilgisi alınamıyor. Lütfen Streamlit Secrets'ı veya .env dosyasını kontrol edin."
-
-    llm = None
-    try:
-        llm = GoogleGenerativeAI(
-            model="models/gemini-2.5-flash",
-            google_api_key=google_api_key,
-            temperature=0.7
-        )
-    except Exception as e:
-        return f"LLM oluşturulurken hata oluştu: {str(e)}"
-
-    ankara_koru_subway_lat = ANKARA_KORU_SUBWAY_LAT
-    ankara_koru_subway_lon = ANKARA_KORU_SUBWAY_LON
-
-    try:
-        weather_data = get_weather(ankara_koru_subway_lat, ankara_koru_subway_lon, openweathermap_api_key)
-
-        if weather_data:
-            current_temp = weather_data['main']['temp']
-            feels_like_temp = weather_data['main']['feels_like']
-            wind_speed = weather_data['wind']['speed']
-            humidity = weather_data['main']['humidity']
-            weather_description = weather_data['weather'][0]['description']
-
-            prompt_template = PromptTemplate(
-                input_variables=["location", "current_temp", "feels_like_temp", "wind_speed", "humidity",
-                                 "weather_description"],
-                template=(
-                    "Termometre **{current_temp}°C** gösterse de, hissedilen sıcaklık **{feels_like_temp}°C**. "
-                    "Tatlı bir rüzgar ({wind_speed} km/s) var ve nem oranı sadece %**{humidity}**! "
-                    "Gökyüzü ise pırıl pırıl açık! Harika bir gün dileriz!"
-                )
-            )
-
-            chain = prompt_template | llm
-
-            current_location_coords = (ankara_koru_subway_lat, ankara_koru_subway_lon)
-            location_to_use = LOCATION_MAPPINGS.get(current_location_coords, weather_data['name'])
-
-            cevap = chain.invoke({
-                "location": location_to_use,
-                "current_temp": f"{current_temp:.1f}",
-                "feels_like_temp": f"{feels_like_temp:.1f}",
-                "wind_speed": round(wind_speed * 3.6),  # m/s'yi km/h'ye çevir
-                "humidity": humidity,
-                "weather_description": weather_description,
-            })
-            return f"☀️ Koru'daki dostlar! Hava durumu raporu geldi: {cevap}"
-        else:
-            return "Hava durumu bilgisi alınamadı. API'den veri gelmedi."
-
-    except Exception as e:
-        return f"Hava durumu alınırken hata oluştu: {str(e)}"
+# --- Hava Durumu Bilgisini Alan Fonksiyon (Bu fonksiyonu kaldırıyoruz veya içe aktardığımızı çağırıyoruz) ---
+# @st.cache_data(ttl=3600) # Bu dekoratör artık langchain.weather.py'deki fonksiyonda olacak
+# def get_langchain_weather_response():
+#     # ... bu fonksiyonun tüm içeriğini kaldırın ...
 
 
 # --- Streamlit Uygulaması Başlangıcı ---
 st.set_page_config(layout="wide")
 st.markdown("<h1 style='text-align: center; color: #add8e6;'>Metro Vagonu Doluluk Oranları</h1>",
             unsafe_allow_html=True)
-weather_info = get_langchain_weather_response()
+
+# Hava durumu bilgisini artık içe aktardığımız fonksiyondan alıyoruz
+# weather_info = get_langchain_weather_response() # Eski çağrı
+weather_info = get_weather_report_from_llm() # Yeni çağrı
+
+# LLM'den gelen metnin doğrudan basılmasını sağlıyoruz, çünkü giriş cümlesi ve emoji LLM tarafından üretilecek.
 st.markdown(f"<h4 style='text-align: center; color: #add8e6;'>{weather_info}</h4>", unsafe_allow_html=True)
 
 # CSS stillerini başlangıçta bir kez yükle (tren tasarımınız)
