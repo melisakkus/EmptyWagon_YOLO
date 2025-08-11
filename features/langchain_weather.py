@@ -110,7 +110,7 @@ def get_langchain_weather_response():
                 "wind_speed": round(wind_speed * 3.6),
                 "humidity": humidity,
                 "weather_description": weather_description,
-                "icon_url": icon_url # Prompt'ta icon_url kullanıldığı için burada da olmalı
+                "icon_url": weather_icon # Prompt'ta icon_url kullanıldığı için burada da olmalı
             })
 
             print("LangChain response başarıyla alındı")
