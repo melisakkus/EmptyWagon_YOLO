@@ -53,12 +53,7 @@ if __name__ == '__main__':
         p.start()
         processes.append(p)
 
-    print("🚀 Streamlit uygulamasını başlatılıyor...")
-    try:
-        subprocess.Popen(["streamlit", "run", "features/streamlit_app.py"])
-        print("✅ Streamlit uygulaması başarıyla başlatıldı.")
-    except Exception as e:
-        print(f"🚨 Streamlit uygulamasını başlatırken bir hata oluştu: {e}")
+
 
     # Video işleme süreçlerinin tamamlanmasını bekle
     for p in processes:

@@ -1,10 +1,8 @@
-# streamlit_app.py
-
 import streamlit as st
 import os
 import time
 import sys
-import json # JSON modülünü kullanacağız
+import json
 
 # Proje ana dizinini Python arama yoluna ekle
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -12,8 +10,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 # Firebase ve Firestore import'ları
-# Artık initialize_firebase modülünden doğrudan initialize_firebase fonksiyonunu import ediyoruz
-from features.database.initialize_firebase import initialize_firebase # <-- Burası değişti
+from features.database.initialize_firebase import initialize_firebase
 from features.database.firestore_crud import get_all_documents, get_document
 from firebase_admin import firestore
 
@@ -25,28 +22,23 @@ from features.get_weather import get_weather
 from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPPINGS
 from dotenv import load_dotenv
 
-# --- Firebase Bağlantısı ---
-# Bu fonksiyonun kendisi initialize_firebase.py içindeki initialize_firebase tarafından çağrılmayacak.
-# initialize_firebase.py içindeki initialize_firebase zaten @st.cache_resource
-# olduğu için, doğrudan onu çağırabiliriz.
-# db = initialize_firebase() # Bu yeterli olacaktır
 
-# Eğer hala bir ara katman fonksiyona ihtiyacınız varsa, şöyle olabilir:
+# --- Firebase Bağlantısı ---
 @st.cache_resource
-def get_firestore_client_wrapper(): # Fonksiyon adını değiştirin veya direk initialize_firebase() kullanın
-    client = initialize_firebase() # initialize_firebase.py'den gelen fonksiyonu çağırın
+def get_firestore_client_wrapper():
+    client = initialize_firebase()
     if client:
-        # st.success("Firebase istemcisi başarıyla alındı.") # Zaten initialize_firebase içinde başarı mesajı var
         pass
     else:
-        st.error("Firebase'e bağlanılamadı. Lütfen Firebase yapılandırmanızı kontrol edin.")
+        st.error("🚨 HATA: Firebase'e bağlanılamadı. Lütfen Firebase yapılandırmanızı kontrol edin.")
     return client
 
-db = get_firestore_client_wrapper() # wrapper'ı çağırın
+
+db = get_firestore_client_wrapper()
 
 if db is None:
     st.error("Uygulama başlatılamadı: Firebase bağlantısı kurulamadı.")
-    st.stop() # Firebase bağlantısı yoksa uygulamayı durdur
+    st.stop()  # Firebase bağlantısı yoksa uygulamayı durdur
 
 # Firestore Koleksiyon Adları
 WAGON_CURRENT_FULLNESS_COLLECTION = "wagon_fullness_current"
@@ -54,26 +46,26 @@ WAGON_HISTORICAL_LOGS_COLLECTION = "wagon_fullness_history"
 PROCESSING_STATUS_COLLECTION = "processing_status"
 PROCESSING_COMPLETE_DOC_ID = "video_analysis_status"
 
+
 # --- Hava Durumu Bilgisini Alan Fonksiyon ---
 @st.cache_data(ttl=3600)
 def get_langchain_weather_response():
-    # API Anahtarlarını doğrudan st.secrets'tan alıyoruz, .env'ye gerek kalmıyor Streamlit Cloud'da
-    google_api_key = st.secrets["general"]["GOOGLE_API_KEY"] # <-- Burası düzeldi
-    openweathermap_api_key = st.secrets["general"]["OPENWEATHER_API_KEY"] # <-- Burası düzeldi
+    google_api_key = st.secrets.get("general", {}).get("GOOGLE_API_KEY")
+    openweathermap_api_key = st.secrets.get("general", {}).get("OPENWEATHER_API_KEY")
 
-    # Load_dotenv sadece yerel geliştirme için, Cloud'da secrets.toml kullanılır
-    # if not google_api_key or not openweathermap_api_key:
-    #     load_dotenv()
-    #     if not google_api_key:
-    #         google_api_key = os.getenv("GOOGLE_API_KEY")
-    #     if not openweathermap_api_key:
-    #         openweathermap_api_key = os.getenv("OPENWEATHER_API_KEY")
+    # Local geliştirme için .env'den çek
+    if not google_api_key or not openweathermap_api_key:
+        load_dotenv()
+        if not google_api_key:
+            google_api_key = os.getenv("GOOGLE_API_KEY")
+        if not openweathermap_api_key:
+            openweathermap_api_key = os.getenv("OPENWEATHER_API_KEY")
 
     if not google_api_key:
-        return "Google API key bulunamadı, hava durumu yanıtı oluşturulamıyor. Lütfen Streamlit Secrets'ı kontrol edin."
+        return "Google API anahtarı bulunamadı, hava durumu yanıtı oluşturulamıyor. Lütfen Streamlit Secrets'ı veya .env dosyasını kontrol edin."
 
     if not openweathermap_api_key:
-        return "OpenWeatherMap API key bulunamadı, hava durumu bilgisi alınamıyor. Lütfen Streamlit Secrets'ı kontrol edin."
+        return "OpenWeatherMap API anahtarı bulunamadı, hava durumu bilgisi alınamıyor. Lütfen Streamlit Secrets'ı veya .env dosyasını kontrol edin."
 
     llm = None
     try:
@@ -97,19 +89,14 @@ def get_langchain_weather_response():
             wind_speed = weather_data['wind']['speed']
             humidity = weather_data['main']['humidity']
             weather_description = weather_data['weather'][0]['description']
-            weather_icon = weather_data['weather'][0]['icon']
-
-            icon_url = f"http://openweathermap.org/img/wn/{weather_icon}@2x.png"
 
             prompt_template = PromptTemplate(
                 input_variables=["location", "current_temp", "feels_like_temp", "wind_speed", "humidity",
-                                 "weather_description", "icon_url"],
+                                 "weather_description"],
                 template=(
-                    "Lütfen {location} yerinin hava durumunu aşağıdaki bilgilere göre arkadaşça ve samimi bir cümle yaz:\n"
-                    "İkon için uygun bir emoji kullan ve metnin başına ekle. "
-                    "Termometre **{current_temp}°C** gösteriyor ama hissedilen sıcaklık **{feels_like_temp}°C**. "
-                    "Rüzgar **{wind_speed} km/h** hızında esiyor, nem oranı ise %**{humidity}**. "
-                    "Hava durumu: {weather_description}. Hava durumu ikonu: {icon_url}."
+                    "Termometre **{current_temp}°C** gösterse de, hissedilen sıcaklık **{feels_like_temp}°C**. "
+                    "Tatlı bir rüzgar ({wind_speed} km/s) var ve nem oranı sadece %**{humidity}**! "
+                    "Gökyüzü ise pırıl pırıl açık! Harika bir gün dileriz!"
                 )
             )
 
@@ -122,17 +109,17 @@ def get_langchain_weather_response():
                 "location": location_to_use,
                 "current_temp": f"{current_temp:.1f}",
                 "feels_like_temp": f"{feels_like_temp:.1f}",
-                "wind_speed": round(wind_speed * 3.6),
+                "wind_speed": round(wind_speed * 3.6),  # m/s'yi km/h'ye çevir
                 "humidity": humidity,
                 "weather_description": weather_description,
-                "icon_url": icon_url
             })
-            return cevap
+            return f"☀️ Koru'daki dostlar! Hava durumu raporu geldi: {cevap}"
         else:
             return "Hava durumu bilgisi alınamadı. API'den veri gelmedi."
 
     except Exception as e:
         return f"Hava durumu alınırken hata oluştu: {str(e)}"
+
 
 # --- Streamlit Uygulaması Başlangıcı ---
 st.set_page_config(layout="wide")
@@ -141,7 +128,7 @@ st.markdown("<h1 style='text-align: center; color: #add8e6;'>Metro Vagonu Dolulu
 weather_info = get_langchain_weather_response()
 st.markdown(f"<h4 style='text-align: center; color: #add8e6;'>{weather_info}</h4>", unsafe_allow_html=True)
 
-# CSS stillerini başlangıçta bir kez yükle
+# CSS stillerini başlangıçta bir kez yükle (tren tasarımınız)
 st.markdown("""
 <style>
     .train-container {
@@ -290,6 +277,7 @@ video_names = {
     "Vagon 3": "wagon3"
 }
 
+
 # Tren çizimini güncelleyen fonksiyon
 def update_train_display(fullness_data, placeholder):
     train_html_parts = []
@@ -367,27 +355,22 @@ def update_train_display(fullness_data, placeholder):
     full_train_html = "\n".join(cleaned_html_parts)
     placeholder.markdown(full_train_html, unsafe_allow_html=True)
 
-# Yeniden oynatma fonksiyonu
-def replay_historical_logs(db_client, wagon_map, display_placeholder):
-    st.info("Loglar yeniden oynatılıyor... Lütfen bekleyin.")
-    try:
-        # Tüm tarihsel logları çek ve zamana göre sırala
-        # Firestore Timestamp nesnelerini doğrudan sıralayabilir.
-        docs = db_client.collection(WAGON_HISTORICAL_LOGS_COLLECTION).order_by("timestamp").stream()
 
-        # Logları listeye al
-        historical_logs = []
-        for doc in docs:
-            historical_logs.append(doc.to_dict())
+# Yeniden oynatma fonksiyonu
+def replay_historical_logs(db_client, wagon_map, display_placeholder, status_placeholder):
+    # Bu fonksiyondaki tüm mesajları `status_placeholder` aracılığıyla göster
+    status_placeholder.info("Loglar yeniden oynatılıyor... Lütfen bekleyin.")
+    try:
+        docs = db_client.collection(WAGON_HISTORICAL_LOGS_COLLECTION).order_by("timestamp").stream()
+        historical_logs = [doc.to_dict() for doc in docs]
 
         if not historical_logs:
-            st.warning("Oynatmak için tarihsel log bulunamadı.")
+            status_placeholder.warning("Oynatmak için tarihsel log bulunamadı.")
             return
 
-        # Vagonların anlık doluluk durumunu tutacak geçici bir dictionary
         current_replay_fullness = {name: 0.0 for name in wagon_map.keys()}
-
         last_timestamp = None
+
         for log_entry in historical_logs:
             wagon_id = log_entry.get("wagon_id")
             fullness = log_entry.get("fullness_percentage")
@@ -400,42 +383,38 @@ def replay_historical_logs(db_client, wagon_map, display_placeholder):
                 update_train_display(current_replay_fullness, display_placeholder)
 
                 if last_timestamp and timestamp:
-                    # Firestore'dan gelen timestamp'ler zaten Python datetime objesi olarak gelir.
                     current_dt = timestamp
                     last_dt = last_timestamp
-
                     time_diff = (current_dt - last_dt).total_seconds()
-
-                    # Simülasyon hızını ayarla: Min 0.05 saniye, Maks 1.0 saniye bekle
-                    # Streamlit Cloud'da hızlı oynamasını istiyorsak bu değerleri düşürebiliriz.
-                    sleep_time = max(0.02, min(0.5, time_diff * 0.1)) # Oynatma hızını artırdık (0.1 çarpanı)
+                    sleep_time = max(0.02, min(0.5, time_diff * 0.1))
                     time.sleep(sleep_time)
                 else:
-                    time.sleep(0.05) # İlk log veya timestamp yoksa kısa bekleme
+                    time.sleep(0.05)
                 last_timestamp = timestamp
 
-        st.success("Log oynatma tamamlandı!")
+        status_placeholder.success("Log oynatma tamamlandı!")
 
     except Exception as e:
-        st.error(f"Tarihsel loglar oynatılırken hata: {e}")
+        status_placeholder.error(f"Tarihsel loglar oynatılırken hata: {e}")
+
 
 # --- Streamlit Uygulamasının Ana Akışı ---
 
-# Tren çizimini dinamik olarak güncellemek için bir placeholder
+# Yer tutucuları tanımla. Bunlar, dinamik olarak değişecek veya boşaltılacak alanlardır.
 train_display_placeholder = st.empty()
-
-# Tamamlama mesajı ve butonlar için placeholder'lar
 completion_message_placeholder = st.empty()
 button_container_placeholder = st.empty()
+loading_status_placeholder = st.empty()  # Yükleme/işlem durumu mesajları için TEK YER!
 
-# Session state'i başlat
+# Oturum durum değişkenlerini başlat
 if 'show_replay_ui' not in st.session_state:
     st.session_state.show_replay_ui = False
 if 'replay_active' not in st.session_state:
     st.session_state.replay_active = False
 
-# Anlık doluluk verilerini çeken ve ekranı güncelleyen yardımcı fonksiyon
-def update_current_fullness_and_display():
+
+# Canlı doluluk verilerini çeken ve ekranı güncelleyen yardımcı fonksiyon
+def update_current_fullness_and_display_live():
     current_fullness = {}
     try:
         all_wagon_data = get_all_documents(db, WAGON_CURRENT_FULLNESS_COLLECTION)
@@ -449,48 +428,69 @@ def update_current_fullness_and_display():
             else:
                 current_fullness[display_name] = 0.0
     except Exception as e:
-        st.error(f"Firestore'dan anlık vagon doluluk verisi okunurken hata: {e}")
+        # Hata durumunda da `loading_status_placeholder`'ı kullan
+        loading_status_placeholder.error(f"Firestore'dan anlık vagon doluluk verisi okunurken hata: {e}")
         for display_name in video_names.keys():
             current_fullness[display_name] = 0.0
+
+    # Tren görüntüsünü her zaman dedike placeholder'ı kullanarak güncelle
     update_train_display(current_fullness, train_display_placeholder)
 
-is_processing_complete_from_firebase = False
-try:
-    if db: # db nesnesinin None olmadığından emin olun
-        status_doc = get_document(db, PROCESSING_STATUS_COLLECTION, PROCESSING_COMPLETE_DOC_ID)
-        if status_doc and status_doc.get("completed", False):
-            is_processing_complete_from_firebase = True
-except Exception as e:
-    st.warning(f"Firestore'dan işlem durumu okunurken hata: {e}. Varsayılan olarak 'tamamlandı' durumu ele alınıyor.")
-    is_processing_complete_from_firebase = True
 
-if is_processing_complete_from_firebase and not st.session_state.show_replay_ui:
-    st.session_state.show_replay_ui = True
-    st.rerun()
+# --- Streamlit Uygulamasının Ana Mantığı (Durum Yönetimi) ---
 
+# 1. Durum: Logları yeniden oynatma modu aktif
 if st.session_state.replay_active:
+    # Bu modda diğer tüm mesajları ve butonları temizle
     completion_message_placeholder.empty()
     button_container_placeholder.empty()
-    replay_historical_logs(db, video_names, train_display_placeholder)
+    # loading_status_placeholder mesajları replay_historical_logs fonksiyonu tarafından yönetilecek
+
+    replay_historical_logs(db, video_names, train_display_placeholder, loading_status_placeholder)
+
     st.session_state.replay_active = False
     st.session_state.show_replay_ui = True
-    st.rerun()
+    st.rerun()  # Oynatma bittikten sonra 'tamamlandı' arayüzüne geçiş için yeniden çalıştır
 
+# 2. Durum: Başlangıç yüklemesi veya video işleme devam ediyor (tamamlanma kontrolü)
+elif not st.session_state.show_replay_ui:
+    # Firebase'den genel işlem tamamlanma durumunu kontrol et
+    is_processing_complete_from_firebase = False
+    try:
+        if db:
+            status_doc = get_document(db, PROCESSING_STATUS_COLLECTION, PROCESSING_COMPLETE_DOC_ID)
+            if status_doc and status_doc.get("completed", False):
+                is_processing_complete_from_firebase = True
+    except Exception as e:
+        # Hata durumunda da `loading_status_placeholder`'ı kullan
+        loading_status_placeholder.warning(
+            f"Firestore'dan işlem durumu okunurken hata: {e}. Varsayılan olarak 'tamamlandı' durumu ele alınıyor.")
+        is_processing_complete_from_firebase = True
+
+    if is_processing_complete_from_firebase:
+        # İşlem tamamlandıysa, oturum durumunu ayarla ve 'tamamlandı' arayüzüne geçmek için yeniden çalıştır
+        st.session_state.show_replay_ui = True
+        st.rerun()  # Bu rerun, bir sonraki çalışmada alttaki `elif st.session_state.show_replay_ui:` bloğuna düşecek
+    else:
+        # İşlem hala devam ediyorsa: Yükleme mesajını göster ve anlık verileri güncelle
+        loading_status_placeholder.info("Veriler yükleniyor ve durum kontrol ediliyor... Lütfen bekleyin.")
+        update_current_fullness_and_display_live()  # Canlı tren verilerini çek ve göster
+
+        time.sleep(1)  # Bir sonraki yeniden çalıştırmadan önce 1 saniye bekle
+        st.rerun()  # Streamlit'i yeniden çalıştırarak yeni veriyi çekmesini sağla
+
+# 3. Durum: İşleme tamamlandı, nihai durumu ve yeniden oynatma butonunu göster
 elif st.session_state.show_replay_ui:
-    update_current_fullness_and_display()
+    loading_status_placeholder.empty()  # Tüm yükleme/durum mesajlarını temizle
+    update_current_fullness_and_display_live()  # Trenin son canlı durumunu göster (görüntüyü sabitlemek için)
 
-    with completion_message_placeholder:
-        st.markdown(
-            "<br><h3 style='text-align: center; color: #A0EEFF; padding: 10px; background-color: #282828; border-radius: 8px;'>✨ Tüm Vagon Görüntüleri Başarıyla Analiz Edildi! ✨</h3>",
-            unsafe_allow_html=True
-        )
+    completion_message_placeholder.markdown(
+        "<br><h3 style='text-align: center; color: #A0EEFF; padding: 10px; background-color: #282828; border-radius: 8px;'>✨ Tüm Vagon Görüntüleri Başarıyla Analiz Edildi! ✨</h3>",
+        unsafe_allow_html=True
+    )
     with button_container_placeholder:
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button("Logları Yeniden Oynat", key="replay_button_centered", use_container_width=True):
                 st.session_state.replay_active = True
-                st.rerun()
-
-else:
-    st.info("Veriler yükleniyor ve durum kontrol ediliyor... Lütfen bekleyin.")
-    update_current_fullness_and_display()
+                st.rerun()  # Yeniden oynatma moduna geç
