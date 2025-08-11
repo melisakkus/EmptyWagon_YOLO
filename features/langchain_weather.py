@@ -80,18 +80,11 @@ def get_langchain_weather_response():
                 input_variables=["location", "current_temp", "feels_like_temp", "wind_speed", "humidity",
                                  "weather_description", "icon_url"],
                 template=(
-                    "Sadece ve sadece tek bir cümle halinde, aşağıdaki bilgileri kullanarak hava durumu raporu oluştur. "
-                    "Başka hiçbir metin, başlık, özet, giriş cümlesi, liste veya madde işareti kullanma. "
-                    "Cümleye hava durumuna uygun tek bir emoji ile başla. Örneğin: '☀️ Ankara Koru için hava durumu: ...'\n"
-                    "Bilgiler:\n"
-                    "Lokasyon: {location}\n"
-                    "Sıcaklık: {current_temp}°C\n"
-                    "Hissedilen Sıcaklık: {feels_like_temp}°C\n"
-                    "Rüzgar Hızı: {wind_speed} km/h\n"
-                    "Nem Oranı: %{humidity}\n"
-                    "Genel Durum: {weather_description}\n"
-                    "Hava durumu ikonu: {icon_url}\n"
-                    "Cümle:" # Modele direkt olarak cümlenin başlamasını söyleyin
+                    "Lütfen {location} yerinin hava durumunu aşağıdaki bilgilere göre arkadaşça ve samimi bir cümle yaz:\n"
+                    "İkon için uygun bir emoji kullan ve metnin başına ekle."
+                    "Termometre **{current_temp}°C** gösteriyor ama hissedilen sıcaklık **{feels_like_temp}°C**. "
+                    "Rüzgar **{wind_speed} km/h** hızında esiyor, nem oranı ise %**{humidity}**. "
+                    "Hava durumu: {weather_description}. Hava durumu ikonu: {icon_url}."
                 )
             )
 
