@@ -4,14 +4,14 @@ import time
 import sys
 
 # Proje ana dizinini Python arama yoluna ekle
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..')) # __file__ kullanmak daha güvenli
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if project_root not in sys.path:
     sys.path.append(project_root)
 
 # Firebase ve Firestore import'ları
 from features.database.initialize_firebase import initialize_firebase
 from features.database.firestore_crud import get_all_documents, get_document
-from firebase_admin import firestore # Bu import zorunlu olmasa da, firestore nesnesi kodda kullanılmasa da bırakıldı.
+from firebase_admin import firestore
 
 # Hava durumu için gerekli import'lar
 from langchain.prompts import PromptTemplate
@@ -26,7 +26,6 @@ from dotenv import load_dotenv
 def get_firestore_client():
     client = initialize_firebase()
     if client:
-        # print("Streamlit: Firebase istemcisi başarıyla alındı.") # İsterseniz bu satırı yorumdan çıkarabilirsiniz.
         pass
     else:
         st.error("Firebase'e bağlanılamadı. Lütfen Firebase yapılandırmanızı kontrol edin.")
@@ -50,7 +49,7 @@ def get_langchain_weather_response():
     openweathermap_api_key = st.secrets.get("OPENWEATHER_API_KEY")
 
     if not google_api_key or not openweathermap_api_key:
-        load_dotenv()
+        load_dotenv() # Yerel çalıştırma için .env yükle, Streamlit Cloud'da secrets kullanılır
         if not google_api_key:
             google_api_key = os.getenv("GOOGLE_API_KEY")
         if not openweathermap_api_key:
@@ -394,10 +393,11 @@ def replay_historical_logs(db_client, wagon_map, display_placeholder):
                     time_diff = (current_dt - last_dt).total_seconds()
 
                     # Simülasyon hızını ayarla: Min 0.05 saniye, Maks 1.0 saniye bekle
-                    sleep_time = max(0.05, min(1.0, time_diff))
+                    # Streamlit Cloud'da hızlı oynamasını istiyorsak bu değerleri düşürebiliriz.
+                    sleep_time = max(0.02, min(0.5, time_diff * 0.1)) # Oynatma hızını artırdık (0.1 çarpanı)
                     time.sleep(sleep_time)
                 else:
-                    time.sleep(0.1) # İlk log veya timestamp yoksa kısa bekleme
+                    time.sleep(0.05) # İlk log veya timestamp yoksa kısa bekleme
                 last_timestamp = timestamp
 
         st.success("Log oynatma tamamlandı!")
@@ -414,9 +414,10 @@ train_display_placeholder = st.empty()
 completion_message_placeholder = st.empty()
 button_container_placeholder = st.empty()
 
-# Session state'i başlat: Video analizi tamamlandı mı ve UI gösterilmeli mi?
+# Session state'i başlat
+# Streamlit Cloud'da uygulamanın "işlem tamamlandı" modunda başlaması beklenir.
 if 'show_replay_ui' not in st.session_state:
-    st.session_state.show_replay_ui = False
+    st.session_state.show_replay_ui = False # Başlangıçta False olarak bırak, Firebase kontrolü yapacak
 if 'replay_active' not in st.session_state:
     st.session_state.replay_active = False
 
@@ -440,33 +441,41 @@ def update_current_fullness_and_display():
             current_fullness[display_name] = 0.0
     update_train_display(current_fullness, train_display_placeholder)
 
-# Her Streamlit çalışmasında işlem durumunu kontrol et
-is_processing_complete_on_this_run = False
+# Streamlit Cloud'da ana mantık:
+# 1. Firebase'deki "completed" bayrağını kontrol et. Bu, lokalde bir kez çalıştırılmış ve veri Firebase'e yazılmışsa TRUE olacaktır.
+# 2. Eğer TRUE ise, Streamlit UI'ı "tamamlandı" modunda başlat (son durumu göster ve 'Yeniden Oynat' butonu).
+# 3. 'Yeniden Oynat' butonuna basıldığında, tarihsel logları oynat.
+
+# İlk yüklemede veya rerunda Firebase'den tamamlanma durumunu kontrol et
+# Streamlit Cloud'da, main.py'nin hiç çalışmadığı bir senaryo olmamalıdır
+# çünkü veriler localde işlenip gönderilmiştir.
+# Dolayısıyla `is_processing_complete_from_firebase` genellikle True dönecektir.
+is_processing_complete_from_firebase = False
 try:
     status_doc = get_document(db, PROCESSING_STATUS_COLLECTION, PROCESSING_COMPLETE_DOC_ID)
     if status_doc and status_doc.get("completed", False):
-        is_processing_complete_on_this_run = True
+        is_processing_complete_from_firebase = True
 except Exception as e:
-    print(f"Firestore'dan işlem durumu okunurken hata: {e}")
+    st.warning(f"Firestore'dan işlem durumu okunurken hata: {e}. Varsayılan olarak 'tamamlandı' durumu ele alınıyor.")
+    is_processing_complete_from_firebase = True # Hata durumunda da UI'ı göstermek için
 
-# Analiz tamamlana bayrağını session state'e yansıt
-# Bu, gereksiz 'while True' döngüsüne girmeyi engeller.
-if is_processing_complete_on_this_run and not st.session_state.show_replay_ui:
+# Eğer Firebase'den işlem tamamlandı bilgisi gelirse, UI'ı buna göre ayarla
+if is_processing_complete_from_firebase and not st.session_state.show_replay_ui:
     st.session_state.show_replay_ui = True
-    st.rerun() # Uygulamayı yeniden çalıştırarak "tamamlandı" durumuna geçişi sağla
+    st.rerun() # UI'ı doğru duruma getirmek için yeniden çalıştır
 
-# Session state ve oynatma durumuna göre ana akışı yönet
+# Ana akışı yönet
 if st.session_state.replay_active:
     # Oynatma aktifse, mesajı ve butonu gizle ve oynatmayı başlat
     completion_message_placeholder.empty()
     button_container_placeholder.empty()
     replay_historical_logs(db, video_names, train_display_placeholder)
     st.session_state.replay_active = False # Oynatma bitti
-    st.session_state.show_replay_ui = True # Tamamlama mesajı ve butonun tekrar görünmesini sağla
+    st.session_state.show_replay_ui = True # Oynatma bittikten sonra tamamlama UI'ına geri dön
     st.rerun() # Oynatma bittikten sonra uygulamayı yeniden çalıştır
 
 elif st.session_state.show_replay_ui:
-    # Analiz tamamlandı ve oynatma aktif değil. Son durumu ve oynatma butonunu göster.
+    # Analiz tamamlandı (veya tamamlanmış varsayılıyor). Son durumu ve oynatma butonunu göster.
     update_current_fullness_and_display() # En son güncel doluluk verisini göster
 
     with completion_message_placeholder:
@@ -477,24 +486,15 @@ elif st.session_state.show_replay_ui:
     with button_container_placeholder:
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
-            # Bu buton, Streamlit çalıştırma başına yalnızca bir kez tanımlanır.
-            if st.button("Yeniden Görüntüle", key="replay_button_centered", use_container_width=True):
+            if st.button("Logları Yeniden Oynat", key="replay_button_centered", use_container_width=True):
                 st.session_state.replay_active = True
-                st.rerun() # Oynatmayı başlatmak için uygulamayı yeniden çalıştır
+                st.rerun()
 
 else:
-    # Analiz devam ediyor. Gerçek zamanlı güncelleme döngüsünü çalıştır.
-    # Bu döngü, işlem durumu tamamlanana kadar devam eder.
-    while True:
-        update_current_fullness_and_display()
-        time.sleep(1)
-
-        # Döngü içinde işlem durumunu kontrol et
-        try:
-            status_doc = get_document(db, PROCESSING_STATUS_COLLECTION, PROCESSING_COMPLETE_DOC_ID)
-            if status_doc and status_doc.get("completed", False):
-                st.session_state.show_replay_ui = True
-                st.rerun() # "Tamamlandı" durumuna geçiş yapmak için uygulamayı yeniden çalıştır
-                break # while döngüsünden çık
-        except Exception as e:
-            print(f"Firestore'dan işlem durumu okunurken hata: {e}")
+    # Bu blok, uygulamanın ilk kez yüklendiği ve henüz Firebase'den 'completed' durumunun alınmadığı
+    # veya bir hata oluştuğu çok kısa bir başlangıç anı için bir fallback'dir.
+    # Streamlit Cloud'da bu duruma genellikle düşmemeliyiz çünkü beklenen durum 'completed: True' olacaktır.
+    st.info("Veriler yükleniyor ve durum kontrol ediliyor... Lütfen bekleyin.")
+    # Bu durumda bile en azından varsayılan veya boş bir ekran gösterebiliriz:
+    update_current_fullness_and_display() # Henüz veri yoksa sıfır dolu vagonlar gösterir.
+    # Burada manuel bir time.sleep'e gerek yok, çünkü st.rerun() hemen tetiklenecektir.
