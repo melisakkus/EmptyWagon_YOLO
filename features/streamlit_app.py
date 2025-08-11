@@ -1,7 +1,10 @@
+# streamlit_app.py
+
 import streamlit as st
 import os
 import time
 import sys
+import json # JSON modülünü kullanacağız
 
 # Proje ana dizinini Python arama yoluna ekle
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -9,7 +12,8 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 # Firebase ve Firestore import'ları
-from features.database.initialize_firebase import initialize_firebase
+# Artık initialize_firebase modülünden doğrudan initialize_firebase fonksiyonunu import ediyoruz
+from features.database.initialize_firebase import initialize_firebase # <-- Burası değişti
 from features.database.firestore_crud import get_all_documents, get_document
 from firebase_admin import firestore
 
@@ -22,19 +26,27 @@ from config import ANKARA_KORU_SUBWAY_LAT, ANKARA_KORU_SUBWAY_LON, LOCATION_MAPP
 from dotenv import load_dotenv
 
 # --- Firebase Bağlantısı ---
+# Bu fonksiyonun kendisi initialize_firebase.py içindeki initialize_firebase tarafından çağrılmayacak.
+# initialize_firebase.py içindeki initialize_firebase zaten @st.cache_resource
+# olduğu için, doğrudan onu çağırabiliriz.
+# db = initialize_firebase() # Bu yeterli olacaktır
+
+# Eğer hala bir ara katman fonksiyona ihtiyacınız varsa, şöyle olabilir:
 @st.cache_resource
-def get_firestore_client():
-    client = initialize_firebase()
+def get_firestore_client_wrapper(): # Fonksiyon adını değiştirin veya direk initialize_firebase() kullanın
+    client = initialize_firebase() # initialize_firebase.py'den gelen fonksiyonu çağırın
     if client:
+        # st.success("Firebase istemcisi başarıyla alındı.") # Zaten initialize_firebase içinde başarı mesajı var
         pass
     else:
         st.error("Firebase'e bağlanılamadı. Lütfen Firebase yapılandırmanızı kontrol edin.")
     return client
 
-db = get_firestore_client()
+db = get_firestore_client_wrapper() # wrapper'ı çağırın
+
 if db is None:
     st.error("Uygulama başlatılamadı: Firebase bağlantısı kurulamadı.")
-    st.stop()
+    st.stop() # Firebase bağlantısı yoksa uygulamayı durdur
 
 # Firestore Koleksiyon Adları
 WAGON_CURRENT_FULLNESS_COLLECTION = "wagon_fullness_current"
@@ -45,21 +57,23 @@ PROCESSING_COMPLETE_DOC_ID = "video_analysis_status"
 # --- Hava Durumu Bilgisini Alan Fonksiyon ---
 @st.cache_data(ttl=3600)
 def get_langchain_weather_response():
-    google_api_key = st.secrets.get("GOOGLE_API_KEY")
-    openweathermap_api_key = st.secrets.get("OPENWEATHER_API_KEY")
+    # API Anahtarlarını doğrudan st.secrets'tan alıyoruz, .env'ye gerek kalmıyor Streamlit Cloud'da
+    google_api_key = st.secrets["general"]["GOOGLE_API_KEY"] # <-- Burası düzeldi
+    openweathermap_api_key = st.secrets["general"]["OPENWEATHER_API_KEY"] # <-- Burası düzeldi
 
-    if not google_api_key or not openweathermap_api_key:
-        load_dotenv() # Yerel çalıştırma için .env yükle, Streamlit Cloud'da secrets kullanılır
-        if not google_api_key:
-            google_api_key = os.getenv("GOOGLE_API_KEY")
-        if not openweathermap_api_key:
-            openweathermap_api_key = os.getenv("OPENWEATHER_API_KEY")
+    # Load_dotenv sadece yerel geliştirme için, Cloud'da secrets.toml kullanılır
+    # if not google_api_key or not openweathermap_api_key:
+    #     load_dotenv()
+    #     if not google_api_key:
+    #         google_api_key = os.getenv("GOOGLE_API_KEY")
+    #     if not openweathermap_api_key:
+    #         openweathermap_api_key = os.getenv("OPENWEATHER_API_KEY")
 
     if not google_api_key:
-        return "Google API key bulunamadı, hava durumu yanıtı oluşturulamıyor. Lütfen Streamlit Secrets'ı veya .env dosyasını kontrol edin."
+        return "Google API key bulunamadı, hava durumu yanıtı oluşturulamıyor. Lütfen Streamlit Secrets'ı kontrol edin."
 
     if not openweathermap_api_key:
-        return "OpenWeatherMap API key bulunamadı, hava durumu bilgisi alınamıyor. Lütfen Streamlit Secrets'ı veya .env dosyasını kontrol edin."
+        return "OpenWeatherMap API key bulunamadı, hava durumu bilgisi alınamıyor. Lütfen Streamlit Secrets'ı kontrol edin."
 
     llm = None
     try:
@@ -415,9 +429,8 @@ completion_message_placeholder = st.empty()
 button_container_placeholder = st.empty()
 
 # Session state'i başlat
-# Streamlit Cloud'da uygulamanın "işlem tamamlandı" modunda başlaması beklenir.
 if 'show_replay_ui' not in st.session_state:
-    st.session_state.show_replay_ui = False # Başlangıçta False olarak bırak, Firebase kontrolü yapacak
+    st.session_state.show_replay_ui = False
 if 'replay_active' not in st.session_state:
     st.session_state.replay_active = False
 
@@ -441,42 +454,30 @@ def update_current_fullness_and_display():
             current_fullness[display_name] = 0.0
     update_train_display(current_fullness, train_display_placeholder)
 
-# Streamlit Cloud'da ana mantık:
-# 1. Firebase'deki "completed" bayrağını kontrol et. Bu, lokalde bir kez çalıştırılmış ve veri Firebase'e yazılmışsa TRUE olacaktır.
-# 2. Eğer TRUE ise, Streamlit UI'ı "tamamlandı" modunda başlat (son durumu göster ve 'Yeniden Oynat' butonu).
-# 3. 'Yeniden Oynat' butonuna basıldığında, tarihsel logları oynat.
-
-# İlk yüklemede veya rerunda Firebase'den tamamlanma durumunu kontrol et
-# Streamlit Cloud'da, main.py'nin hiç çalışmadığı bir senaryo olmamalıdır
-# çünkü veriler localde işlenip gönderilmiştir.
-# Dolayısıyla `is_processing_complete_from_firebase` genellikle True dönecektir.
 is_processing_complete_from_firebase = False
 try:
-    status_doc = get_document(db, PROCESSING_STATUS_COLLECTION, PROCESSING_COMPLETE_DOC_ID)
-    if status_doc and status_doc.get("completed", False):
-        is_processing_complete_from_firebase = True
+    if db: # db nesnesinin None olmadığından emin olun
+        status_doc = get_document(db, PROCESSING_STATUS_COLLECTION, PROCESSING_COMPLETE_DOC_ID)
+        if status_doc and status_doc.get("completed", False):
+            is_processing_complete_from_firebase = True
 except Exception as e:
     st.warning(f"Firestore'dan işlem durumu okunurken hata: {e}. Varsayılan olarak 'tamamlandı' durumu ele alınıyor.")
-    is_processing_complete_from_firebase = True # Hata durumunda da UI'ı göstermek için
+    is_processing_complete_from_firebase = True
 
-# Eğer Firebase'den işlem tamamlandı bilgisi gelirse, UI'ı buna göre ayarla
 if is_processing_complete_from_firebase and not st.session_state.show_replay_ui:
     st.session_state.show_replay_ui = True
-    st.rerun() # UI'ı doğru duruma getirmek için yeniden çalıştır
+    st.rerun()
 
-# Ana akışı yönet
 if st.session_state.replay_active:
-    # Oynatma aktifse, mesajı ve butonu gizle ve oynatmayı başlat
     completion_message_placeholder.empty()
     button_container_placeholder.empty()
     replay_historical_logs(db, video_names, train_display_placeholder)
-    st.session_state.replay_active = False # Oynatma bitti
-    st.session_state.show_replay_ui = True # Oynatma bittikten sonra tamamlama UI'ına geri dön
-    st.rerun() # Oynatma bittikten sonra uygulamayı yeniden çalıştır
+    st.session_state.replay_active = False
+    st.session_state.show_replay_ui = True
+    st.rerun()
 
 elif st.session_state.show_replay_ui:
-    # Analiz tamamlandı (veya tamamlanmış varsayılıyor). Son durumu ve oynatma butonunu göster.
-    update_current_fullness_and_display() # En son güncel doluluk verisini göster
+    update_current_fullness_and_display()
 
     with completion_message_placeholder:
         st.markdown(
@@ -491,10 +492,5 @@ elif st.session_state.show_replay_ui:
                 st.rerun()
 
 else:
-    # Bu blok, uygulamanın ilk kez yüklendiği ve henüz Firebase'den 'completed' durumunun alınmadığı
-    # veya bir hata oluştuğu çok kısa bir başlangıç anı için bir fallback'dir.
-    # Streamlit Cloud'da bu duruma genellikle düşmemeliyiz çünkü beklenen durum 'completed: True' olacaktır.
     st.info("Veriler yükleniyor ve durum kontrol ediliyor... Lütfen bekleyin.")
-    # Bu durumda bile en azından varsayılan veya boş bir ekran gösterebiliriz:
-    update_current_fullness_and_display() # Henüz veri yoksa sıfır dolu vagonlar gösterir.
-    # Burada manuel bir time.sleep'e gerek yok, çünkü st.rerun() hemen tetiklenecektir.
+    update_current_fullness_and_display()
