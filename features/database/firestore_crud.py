@@ -2,6 +2,7 @@
 # --- Genel CRUD Fonksiyonları ---
 from features.database.initialize_firebase import initialize_firebase
 from firebase_admin import firestore # SERVER_TIMESTAMP için gerekli
+import time # <-- Add this line
 
 # collection = "trainwagon" # Bu satırı kaldırın, koleksiyon adını fonksiyonlara parametre olarak geçireceğiz.
 
@@ -98,6 +99,45 @@ def delete_document(db, collection_name, document_id):
     except Exception as e:
         print(f"❌ Hata: Doküman silinemedi. Detay: {e}")
         return False
+
+
+# --- Yeni Eklenecek Fonksiyon ---
+def delete_all_documents_in_collection(db, collection_name, batch_size=500):
+    """
+    Belirtilen koleksiyondaki tüm dokümanları siler.
+    Firestore'da koleksiyon silme doğrudan bir API değildir, bu yüzden dokümanlar tek tek (batch halinde) silinir.
+    """
+    if db is None:
+        print("❌ Hata: Firebase istemcisi başlatılmamış, koleksiyon temizlenemedi.")
+        return 0
+
+    print(f"⏳ '{collection_name}' koleksiyonundaki eski loglar temizleniyor...")
+    deleted_count = 0
+
+    # Dokümanları parçalar halinde (batch) silmek için döngü
+    while True:
+        # Belirli sayıda dokümanı al
+        docs = db.collection(collection_name).limit(batch_size).stream()
+        documents = list(docs)  # Iterator'ı listeye dönüştürerek üzerinde işlem yapabilmek için
+
+        if not documents:
+            # Daha fazla doküman yoksa döngüyü kır
+            break
+
+        # Batch işlemi başlat
+        batch = db.batch()
+        for doc in documents:
+            batch.delete(doc.reference)
+            deleted_count += 1
+
+        # Batch'i commit et (değişiklikleri uygula)
+        batch.commit()
+
+        # API hız limitlerine takılmamak için kısa bir bekleme
+        time.sleep(0.1)
+
+    print(f"🗑️ '{collection_name}' koleksiyonundan toplam {deleted_count} doküman silindi.")
+    return deleted_count
 
 # Ekleme işlemi denemesi - Bu kısım test amaçlıdır, canlı kodda kaldırılabilir
 # client = initialize_firebase()
