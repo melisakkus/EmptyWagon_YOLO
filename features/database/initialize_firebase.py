@@ -42,7 +42,7 @@ def initialize_firebase():
         if not firebase_admin._apps:
             cred = credentials.Certificate(firebase_credentials_dict)
             firebase_admin.initialize_app(cred)
-            st.success("Firebase uygulaması başarıyla başlatıldı!")
+            #st.success("Firebase uygulaması başarıyla başlatıldı!")
         else:
             # st.info("Firebase uygulaması zaten başlatılmıştı.") # Cache_resource kullanıldığında bu mesajı görmeyeceğiz.
             pass # Zaten başlatılmışsa bir şey yapmaya gerek yok, sadece istemciyi döndüreceğiz.
