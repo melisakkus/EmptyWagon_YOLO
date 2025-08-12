@@ -1,4 +1,4 @@
-# 🚇 MetroVision: Akıllı Vagon Doluluk Takip Sistemi
+![İsimsiz video ‐ Clipchamp ile yapıldı (12)](https://github.com/user-attachments/assets/00e57426-72f8-4c19-8234-c4a2d1600965)# 🚇 MetroVision: Akıllı Vagon Doluluk Takip Sistemi
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)
@@ -258,7 +258,10 @@ LangChain ve Gemini ile ham hava durumu verilerini kullanıcı dostu metne dön�
 
 ### 📊 **Sistem Ekran Görüntüleri**
 
-#### Streamlit Dashboard
+#### Streamlit Dashboard & Canlı Akış
+
+![EmptyWagon](https://github.com/user-attachments/assets/faec14c5-7049-472d-85c2-8ef34ce599d6)
+
 <img width="1920" height="1200" alt="Ekran görüntüsü 2025-08-11 213018" src="https://github.com/user-attachments/assets/9d7869b7-7f3f-492f-b5b1-3660cb657b37" />
 
 <img width="1920" height="1200" alt="Ekran görüntüsü 2025-08-11 213023" src="https://github.com/user-attachments/assets/d9a8162a-c303-4a56-9a64-af5637b264e2" />
