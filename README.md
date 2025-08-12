@@ -1,4 +1,4 @@
-![İsimsiz video ‐ Clipchamp ile yapıldı (12)](https://github.com/user-attachments/assets/00e57426-72f8-4c19-8234-c4a2d1600965)# 🚇 MetroVision: Akıllı Vagon Doluluk Takip Sistemi
+# 🚇 MetroVision: Akıllı Vagon Doluluk Takip Sistemi
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)
