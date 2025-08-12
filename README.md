@@ -53,13 +53,12 @@ OpenWeather API → LangChain + Gemini AI → User-friendly Weather Info
 
 ### 🌐 **Kullanıcı Arayüzü & Görselleştirme**
 - **Streamlit Cloud Dashboard**: Production-ready web arayüzü
-- **"Logları Getir" Butonu**: Firebase'deki işlenmiş verileri manuel yükleme
+- **"Logları Yeniden Oynat" Butonu**: Firebase'deki işlenmiş verileri manuel yükleme
 - **Dinamik Renk Kodlama**: Doluluk oranına göre vagon renklendirme
   - 🔵 Boş (0-9%)
   - 🟢 Az Dolu (10-29%)
   - 🟠 Orta Dolu (30-59%)
   - 🔴 Çok Dolu (60%+)
-- **Tarihsel Log Oynatma**: "Logları Yeniden Oynat" ile animasyonlu veri görüntüleme
 - **İki Mod Desteği**: Yerel geliştirme için canlı güncelleme, cloud için manuel veri çekimi
 
 ### 🌤️ **Akıllı Hava Durumu Entegrasyonu**
@@ -72,7 +71,7 @@ OpenWeather API → LangChain + Gemini AI → User-friendly Weather Info
 ### 🔧 **Teknik Özellikler**
 - **Ayrık İşlem Mimarisi**: Video işleme ve web arayüzü bağımsız çalışma
 - **Cloud-Ready Deployment**: Streamlit Cloud için optimize edilmiş yapı
-- **Manuel Veri Senkronizasyonu**: "Logları Getir" ile kontrollü veri yükleme
+- **Manuel Veri Senkronizasyonu**: "Logları Yeniden Oynat" ile kontrollü veri yükleme
 - **Kaynak Optimizasyonu**: Firebase bağlantısı tek instance yönetimi
 - **Güvenli Konfigürasyon**: API anahtarları `st.secrets` ile yönetimi
 
@@ -208,7 +207,7 @@ streamlit run features/streamlit_app.py
 Firebase Firestore üzerinden video işleme sonuçlarının Streamlit Cloud'a iletimi
 
 ### 🎨 **Dinamik Veri Yükleme**
-"Logları Getir" butonu ile manuel veri çekimi ve görselleştirme
+"Logları Yeniden Oynat" butonu ile manuel veri çekimi ve görselleştirme
 
 ### 🧠 **AI Destekli Hava Durumu**
 Ham meteoroloji verilerini samimi, anlaşılır metne dönüştürme
@@ -217,12 +216,11 @@ Ham meteoroloji verilerini samimi, anlaşılır metne dönüştürme
 
 - **Önbellekleme**: Hava durumu verileri 1 saat cache'leniyor
 - **Kaynak Yönetimi**: Firebase bağlantısı tek instance olarak yönetiliyor
-- **Asenkron İşleme**: Video analizi arka planda, UI responsive kalıyor
 
 ## 🔧 Modül Detayları
 
 ### **main.py** - Ana Orkestratör
-Ana orchestrator olarak Firebase bağlantısını kurar, tarihsel verileri temizler, paralel video işleme süreçlerini başlatır ve Streamlit arayüzünü çalıştırır.
+Ana orchestrator olarak Firebase bağlantısını kurar, tarihsel verileri temizler, paralel video işleme süreçlerini başlatır.
 
 ### **video_processor.py** - Video Analiz Modülü  
 YOLOv8 ile kişi tespiti, multi-object tracking, sayım bölgesi analizi ve Firebase'e veri kaydı gerçekleştirir.
@@ -252,8 +250,6 @@ LangChain ve Gemini ile ham hava durumu verilerini kullanıcı dostu metne dön�
 
 ⭐ **Bu projeyi beğendiyseniz, yıldız vermeyi unutmayın!**
 
-*"Akıllı şehirler, akıllı çözümlerle mümkün"* 🌟
-
 ## 📸 Proje Görselleri ve Videolar
 
 ### 📊 **Sistem Ekran Görüntüleri**
@@ -261,6 +257,8 @@ LangChain ve Gemini ile ham hava durumu verilerini kullanıcı dostu metne dön�
 #### Streamlit Dashboard & Canlı Akış
 
 ![EmptyWagon](https://github.com/user-attachments/assets/faec14c5-7049-472d-85c2-8ef34ce599d6)
+
+<img width="1920" height="1080" alt="Ekran görüntüsü 2025-08-12 112203" src="https://github.com/user-attachments/assets/e143fa2b-022f-44dc-bf97-67674cd3ebcf" />
 
 <img width="1920" height="1200" alt="Ekran görüntüsü 2025-08-11 213018" src="https://github.com/user-attachments/assets/9d7869b7-7f3f-492f-b5b1-3660cb657b37" />
 
