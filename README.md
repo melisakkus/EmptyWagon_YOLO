@@ -268,6 +268,3 @@ LangChain ve Gemini ile ham hava durumu verilerini kullanıcı dostu metne dön�
 #### YOLOv8 Video Analizi
 
 https://github.com/user-attachments/assets/c13e53c5-70aa-4295-acf1-4287f1024e8e
-
-### 🏗️ **Sistem Mimarisi Diyagramı**
-![System Architecture](https://your-image-link.com/system-architecture.png)
